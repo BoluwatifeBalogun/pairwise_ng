@@ -68,14 +68,17 @@ SQLite by default. Set `DATABASE_URL` to use a hosted database; no code change i
 - PostgreSQL: `postgres://USER:PASSWORD@HOST:PORT/DBNAME`
 
 The MySQL driver is PyMySQL, which is pure Python, so nothing has to be compiled on the host.
-Tested against MySQL 8.0: migrations, demo seed, all 16 tests, and a browser pass.
+Tested against MySQL 8.0 and PostgreSQL 16 (over SSL): migrations, demo seed, all 16 tests,
+and a browser pass on each.
 
-## Hosting on Render (free plan) with a filess.io database
+## Hosting on Render (free plan) with a hosted database
 
-1. On filess.io create a MySQL 8 database and note its host, port, user, password and database name.
+1. Create a free database: a Neon project (copy its `postgresql://...` connection string), or a
+   filess.io MySQL 8 database (note its host, port, user, password and database name).
 2. Push this folder to GitHub.
 3. On Render choose New > Blueprint and pick the repo. `render.yaml` selects the free plan and
-   asks for `DATABASE_URL`: enter `mysql://USER:PASSWORD@HOST:PORT/DBNAME` with the filess.io values.
+   asks for `DATABASE_URL`: paste the Neon string as it is, or enter
+   `mysql://USER:PASSWORD@HOST:PORT/DBNAME` with the filess.io values.
 4. The first start creates the tables and loads the demonstration data. Later starts keep
    everything, so accounts made on the site survive restarts.
 

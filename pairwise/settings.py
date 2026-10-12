@@ -63,6 +63,11 @@ if DATABASES["default"]["ENGINE"].endswith("mysql"):
         "connect_timeout": 15,
     })
 
+if DATABASES["default"]["ENGINE"].endswith("postgresql"):
+    # Safe with pooled connection strings (Neon's "-pooler" host, PgBouncer).
+    DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
+    DATABASES["default"].setdefault("OPTIONS", {}).setdefault("connect_timeout", 15)
+
 AUTH_USER_MODEL = "core.User"
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",

@@ -17,6 +17,7 @@ services:
       - key: SBERT_THREADS
         value: "1"
       # Hosted database so accounts survive restarts. Render asks for the value when the
-      # Blueprint is created: mysql://USER:PASSWORD@HOST:PORT/DBNAME from filess.io
+      # Blueprint is created. Paste the connection string from Neon (postgresql://...)
+      # or a MySQL one from filess.io (mysql://USER:PASSWORD@HOST:PORT/DBNAME).
       - key: DATABASE_URL
         sync: false
