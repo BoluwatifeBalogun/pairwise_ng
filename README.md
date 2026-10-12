@@ -62,16 +62,27 @@ held-out records is registered but not activated.
 
 ## Database
 
-SQLite by default. For MySQL (the report's database) uncomment `mysqlclient` in
-`requirements.txt` and set `DATABASE_URL=mysql://user:pass@host:3306/pairwise`.
-Postgres works the same way with a `postgres://` URL.
+SQLite by default. Set `DATABASE_URL` to use a hosted database; no code change is needed.
 
-## Hosting on Render (free plan)
+- MySQL (the report's database): `mysql://USER:PASSWORD@HOST:PORT/DBNAME`
+- PostgreSQL: `postgres://USER:PASSWORD@HOST:PORT/DBNAME`
 
-Push to GitHub, then New > Blueprint and pick the repo; `render.yaml` selects the free plan.
-The free disk is wiped on every restart, so with SQLite any account created on the site
-disappears and the demo data is rebuilt. To keep accounts, create a free Postgres database
-(Neon or Supabase) and add its URL as `DATABASE_URL` in the Render dashboard.
+The MySQL driver is PyMySQL, which is pure Python, so nothing has to be compiled on the host.
+Tested against MySQL 8.0: migrations, demo seed, all 16 tests, and a browser pass.
+
+## Hosting on Render (free plan) with a filess.io database
+
+1. On filess.io create a MySQL 8 database and note its host, port, user, password and database name.
+2. Push this folder to GitHub.
+3. On Render choose New > Blueprint and pick the repo. `render.yaml` selects the free plan and
+   asks for `DATABASE_URL`: enter `mysql://USER:PASSWORD@HOST:PORT/DBNAME` with the filess.io values.
+4. The first start creates the tables and loads the demonstration data. Later starts keep
+   everything, so accounts made on the site survive restarts.
+
+Notes: free databases allow few simultaneous connections, so the app closes its connection
+after every request (`DB_CONN_MAX_AGE=0`) and runs one worker with two threads. The demo data
+plus one allocation run uses about 1 MB of the 10 MB free allowance. Without `DATABASE_URL`
+the site falls back to SQLite, which Render wipes on every restart.
 
 ## Layout
 

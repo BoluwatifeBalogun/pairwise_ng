@@ -4,9 +4,9 @@ services:
     runtime: python
     plan: free
     buildCommand: bash build.sh
-    # migrate + seed on every start: with the default SQLite file, Render's free disk is
-    # wiped on each restart, so the demo data is rebuilt. Set DATABASE_URL to keep data.
-    startCommand: python manage.py migrate --noinput && python manage.py seed_demo && gunicorn pairwise.wsgi --workers 1 --threads 4 --timeout 120
+    # migrate + seed on every start. With DATABASE_URL set, data is kept and the seed step
+    # does nothing once the demo data exists. Without it, SQLite is wiped on each restart.
+    startCommand: python manage.py migrate --noinput && python manage.py seed_demo && gunicorn pairwise.wsgi --workers 1 --threads 2 --timeout 120
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.3
@@ -16,5 +16,7 @@ services:
         generateValue: true
       - key: SBERT_THREADS
         value: "1"
-      # - key: DATABASE_URL        # free external Postgres (Neon, Supabase) so accounts survive restarts
-      #   sync: false
+      # Hosted database so accounts survive restarts. Render asks for the value when the
+      # Blueprint is created: mysql://USER:PASSWORD@HOST:PORT/DBNAME from filess.io
+      - key: DATABASE_URL
+        sync: false

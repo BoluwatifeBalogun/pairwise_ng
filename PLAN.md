@@ -75,7 +75,7 @@ Integrity rules in the database itself: CGPA within range, capacity at least one
 | Layer | Tool |
 |---|---|
 | Web framework | Django 5.2 (as in Table 4.1) |
-| Database | SQLite by default; MySQL or Postgres through `DATABASE_URL` |
+| Database | SQLite by default; MySQL 8 (tested, PyMySQL driver) or Postgres through `DATABASE_URL` |
 | Model inference | all-MiniLM-L6-v2 exported to ONNX, run with ONNX Runtime + tokenizers |
 | Model training | sentence-transformers + PyTorch (separate machine), contrastive ranking loss |
 | Arithmetic | NumPy |

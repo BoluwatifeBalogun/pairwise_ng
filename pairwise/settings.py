@@ -43,10 +43,25 @@ TEMPLATES = [{
 }]
 WSGI_APPLICATION = "pairwise.wsgi.application"
 
-# SQLite out of the box. Set DATABASE_URL for MySQL (the report's database) or Postgres:
-#   mysql://user:password@host:3306/pairwise     postgres://user:password@host/pairwise
-DATABASES = {"default": dj_database_url.config(
-    default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}", conn_max_age=600)}
+# SQLite out of the box. Set DATABASE_URL to keep data on a hosted database:
+#   mysql://user:password@host:port/dbname        (filess.io, the report's MySQL)
+#   postgres://user:password@host:port/dbname
+DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+if DATABASE_URL.startswith("mysql"):
+    import pymysql  # pure-Python MySQL driver, nothing to compile on the host
+
+    pymysql.install_as_MySQLdb()
+# Free hosted databases allow only a handful of connections at once, so by default a
+# connection is closed after each request instead of being held open.
+DATABASES = {"default": dj_database_url.parse(
+    DATABASE_URL or f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+    conn_max_age=int(os.environ.get("DB_CONN_MAX_AGE", "0")))}
+if DATABASES["default"]["ENGINE"].endswith("mysql"):
+    DATABASES["default"].setdefault("OPTIONS", {}).update({
+        "charset": "utf8mb4",
+        "init_command": "SET sql_mode='STRICT_TRANS_TABLES', default_storage_engine=INNODB",
+        "connect_timeout": 15,
+    })
 
 AUTH_USER_MODEL = "core.User"
 AUTH_PASSWORD_VALIDATORS = [
