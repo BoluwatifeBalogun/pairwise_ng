@@ -1,0 +1,21 @@
+{% extends "core/_shell.html" %}{% load ui %}
+{% block title %}Model versions, {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Model versions</h1><p>Sentence-BERT is the only learning model in the system. Each training round is saved as a version and scored on held-out past projects it was never shown.</p></div></div>
+<div class="stack">
+<div class="table-wrap"><table class="tbl"><thead><tr><th>Version</th><th class="r">Round</th><th class="r">Top-1</th><th class="r">Top-3</th><th class="r">MRR</th><th class="r">Train / held out</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody>
+{% for v in versions %}<tr><td><span style="font-weight:550">{{ v.name }}</span><br><span class="muted" style="font-size:13.5px">{{ v.notes|default:v.file_path }}</span></td><td class="r num">{{ v.training_round }}</td>
+  <td class="r num">{{ v.top1|percent }}</td><td class="r num">{{ v.top3|percent }}</td><td class="r num">{% if v.mrr is None %}to be filled{% else %}{{ v.mrr|floatformat:3 }}{% endif %}</td><td class="r num">{{ v.n_train|default:"0" }} / {{ v.n_eval|default:"0" }}</td>
+  <td>{% if v.is_active %}<span class="badge ok">{% icon "circle-check" %} Active</span>{% else %}<span class="badge">Stored</span>{% endif %}</td>
+  <td class="actions"><form class="inline" method="post">{% csrf_token %}<input type="hidden" name="version" value="{{ v.pk }}">
+    <button class="btn btn-ghost btn-sm" type="submit" name="evaluate" value="1" data-busy="Evaluating">Evaluate</button>
+    {% if not v.is_active %}<button class="btn btn-ghost btn-sm" type="submit" name="activate" value="1" data-confirm="Make {{ v.name }} the active model for every new allocation run?">Make active</button>{% endif %}</form></td></tr>{% endfor %}
+</tbody></table></div>
+<div class="grid g2" style="align-items:start">
+  <div class="card card-pad"><h3>How the scores are measured</h3><p style="margin-top:10px;color:var(--ink-2);font-size:15px">Each held-out project description is treated as a new student's interest statement. The supervisor who actually handled that project is the correct answer. Supervisor profiles are rebuilt without the held-out records before scoring.</p>
+    <dl class="kv" style="margin-top:14px;font-size:14.5px"><dt>Top-1</dt><dd style="font-weight:400">The correct supervisor is ranked first.</dd><dt>Top-3</dt><dd style="font-weight:400">The correct supervisor is in the first three.</dd><dt>MRR</dt><dd style="font-weight:400">Average of one divided by the correct supervisor's rank.</dd></dl></div>
+  <div class="card card-pad"><h3>Adding a fine-tuned round</h3><ol style="margin:12px 0 0;padding-left:20px;color:var(--ink-2);font-size:15px;display:grid;gap:8px"><li>Export the training files: <code>python manage.py export_training_data</code></li><li>Fine-tune on a GPU machine: <code>python training/finetune_sbert.py --round 1</code></li><li>Copy the output folder into <code>models/</code> and register it: <code>python manage.py register_model sbert-round-1 --round 1 --activate</code></li></ol>
+    <p class="note" style="margin-top:14px">{% icon "info" %}<span>A round is activated only if it does not score worse than the current version on the held-out records.</span></p></div>
+</div>
+</div>
+{% endblock %}

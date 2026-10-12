@@ -1,0 +1,22 @@
+{% extends "core/_base.html" %}{% load ui %}
+{% block body %}
+<div class="shell">
+  <aside class="side">
+    {% include "core/_brand.html" %}
+    <div class="side-dept"><b>{{ dept.name }}</b>{{ dept.institution.name }}<br>{{ dept.session }} session</div>
+    <nav aria-label="Coordinator">
+      <a href="{% url 'c_overview' %}"{% if nav == "overview" %} aria-current="page"{% endif %}>{% icon "layout-dashboard" %}Overview</a>
+      <a href="{% url 'c_students' %}"{% if nav == "students" %} aria-current="page"{% endif %}>{% icon "graduation-cap" %}Students</a>
+      <a href="{% url 'c_supervisors' %}"{% if nav == "supervisors" %} aria-current="page"{% endif %}>{% icon "users" %}Supervisors{% if counts.pending %}<span class="count">{{ counts.pending }}</span>{% endif %}</a>
+      <a href="{% url 'c_projects' %}"{% if nav == "projects" %} aria-current="page"{% endif %}>{% icon "book-open" %}Past projects</a>
+      <a href="{% url 'c_models' %}"{% if nav == "models" %} aria-current="page"{% endif %}>{% icon "cpu" %}Model versions</a>
+      <a href="{% url 'c_run' %}"{% if nav == "run" %} aria-current="page"{% endif %}>{% icon "play" %}Run allocation</a>
+      <a href="{% url 'c_flagged' %}"{% if nav == "flagged" %} aria-current="page"{% endif %}>{% icon "flag" %}Flagged cases{% if counts.open_flags %}<span class="count">{{ counts.open_flags }}</span>{% endif %}</a>
+      <a href="{% url 'c_report' %}"{% if nav == "report" %} aria-current="page"{% endif %}>{% icon "send" %}Publish and reports</a>
+    </nav>
+    <div class="side-foot"><span class="who">{{ user.email }}</span>
+      <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="linkbtn" type="submit">{% icon "log-out" %}Sign out</button></form></div>
+  </aside>
+  <main class="main" id="main"><div class="main-in">{% block content %}{% endblock %}</div></main>
+</div>
+{% endblock %}

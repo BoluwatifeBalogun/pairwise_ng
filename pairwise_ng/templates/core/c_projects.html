@@ -1,0 +1,18 @@
+{% extends "core/_shell.html" %}{% load ui %}
+{% block title %}Past projects, {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Past projects</h1><p>{{ counts.projects }} records. They shape each supervisor's profile and are the data the model is fine-tuned and evaluated on. Student names and matric numbers are never stored here.</p></div></div>
+<div class="grid g-main">
+<div class="stack">
+{% for s in groups %}<div class="card card-pad"><div class="card-head"><h3>{{ s.full_name }}</h3><span class="badge">{{ s.past_projects.all|length }} records</span></div>
+  {% for p in s.past_projects.all %}<div class="row" style="justify-content:space-between;flex-wrap:nowrap;padding:8px 0;border-top:1px solid var(--line-2)"><span><span style="font-weight:500">{{ p.title }}</span><br><span class="muted" style="font-size:13.5px">{{ p.keywords }}{% if p.session %}, {{ p.session }}{% endif %}</span></span>
+    <span class="row" style="flex-wrap:nowrap">{% if p.held_out %}<span class="badge" title="Kept back from training and used only to evaluate the model">Held out</span>{% endif %}
+    <form class="inline" method="post" action="{% url 'project_delete' p.pk %}" data-confirm="Remove this past project record?">{% csrf_token %}<button class="iconbtn danger" type="submit" aria-label="Remove {{ p.title }}">{% icon "trash-2" %}</button></form></span></div>
+  {% empty %}<p class="muted">No past projects on record. This supervisor's profile rests on the specialisation statement alone.</p>{% endfor %}</div>
+{% empty %}<div class="card"><div class="empty"><h3>Add supervisors first</h3><p>Past projects are attached to the supervisor who handled them.</p></div></div>{% endfor %}
+</div>
+<div class="card card-pad" style="position:sticky;top:20px"><h3>Upload past project records</h3><p class="muted" style="margin:6px 0 16px;font-size:15px">A CSV with the columns supervisor_name, title, keywords, abstract, session. The supervisor name must match a supervisor in this department.</p>
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}{% include "core/_field.html" with f=upload.file %}
+    <div class="form-actions"><button class="btn btn-primary" type="submit" data-busy="Uploading">{% icon "upload" %} Upload</button><a href="{% url 'csv_template' 'past_projects_template' %}">Download the template</a></div></form></div>
+</div>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "core/_base.html" %}{% load ui %}
+{% block body %}
+<div class="auth">
+  <aside class="auth-side">
+    {% include "core/_brand.html" with c1="#fff" c2="#7CF0B7" c3="#06281C" %}
+    <div><h1>{% block sidehead %}Matched on meaning. Placed on merit.{% endblock %}</h1><p>{% block sidetext %}Final year project supervisors allocated by what students actually want to work on, within every supervisor's capacity.{% endblock %}</p></div>
+    <p class="quote" style="font-size:14px;margin:0">Demonstration data is fictional.</p>
+  </aside>
+  <main class="auth-main" id="main"><div class="auth-box">{% block box %}{% endblock %}</div></main>
+</div>
+{% endblock %}

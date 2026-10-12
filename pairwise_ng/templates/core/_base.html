@@ -1,0 +1,22 @@
+{% load static ui %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{{ SITE_NAME }}{% endblock %}</title>
+<meta name="description" content="Student-to-supervisor allocation for final year projects, using Sentence-BERT semantic matching and a CGPA-priority rule.">
+<meta name="theme-color" content="#007A49">
+<link rel="preload" href="{% static 'fonts/geist-latin-wght-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="{% static 'fonts/instrument-serif-latin-400-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="{% static 'css/app.css' %}">
+<link rel="icon" href="{% static 'img/mark.svg' %}" type="image/svg+xml">
+</head>
+<body class="{% block bodyclass %}{% endblock %}">
+<a class="skip" href="#main">Skip to content</a>
+{% block body %}{% endblock %}
+{% if messages %}<div class="toasts" role="status" aria-live="polite">
+{% for m in messages %}<div class="toast {{ m.tags }}">{% if 'error' in m.tags %}{% icon "triangle-alert" %}{% else %}{% icon "circle-check" %}{% endif %}<span>{{ m }}</span><button type="button" aria-label="Dismiss message">{% icon "x" 16 %}</button></div>{% endfor %}
+</div>{% endif %}
+<script src="{% static 'js/app.js' %}" defer></script>
+</body>
+</html>

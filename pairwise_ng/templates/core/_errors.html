@@ -1,0 +1,4 @@
+{% if form.errors %}<div class="errsum" role="alert" tabindex="-1"><h3>Check the highlighted fields</h3><ul>
+{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}
+{% for f in form %}{% for e in f.errors %}<li><a href="#{{ f.id_for_label }}">{{ f.label }}</a>: {{ e }}</li>{% endfor %}{% endfor %}
+</ul></div>{% endif %}

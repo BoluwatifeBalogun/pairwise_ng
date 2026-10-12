@@ -1,0 +1,14 @@
+{% extends "core/_shell.html" %}{% load ui %}
+{% block title %}Supervisors, {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Supervisors</h1><p>{{ counts.supervisors_ready }} ready with {{ counts.capacity }} places between them.</p></div>
+  <div class="page-actions"><a class="btn btn-primary" href="{% url 'c_supervisor_add' %}">{% icon "plus" %} Add supervisor</a></div></div>
+{% if supervisors %}<div class="table-wrap"><table class="tbl"><thead><tr><th>Name</th><th>Specialisation</th><th class="r">Capacity</th><th class="r">Past projects</th><th class="r">Allocated</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody>
+{% for s in supervisors %}<tr><td style="font-weight:550;white-space:nowrap">{{ s.full_name }}</td><td>{% if s.specialisation_text %}{{ s.specialisation_text }}{% else %}<span class="badge warn">Missing</span>{% endif %}</td>
+  <td class="r num">{{ s.capacity }}</td><td class="r num">{{ s.n_projects }}</td><td class="r num">{{ s.n_students }}</td>
+  <td>{% if not s.approved %}<form class="inline" method="post" action="{% url 'c_supervisor_approve' s.pk %}">{% csrf_token %}<button class="btn btn-ghost btn-sm" type="submit">Confirm</button></form>{% elif s.ready %}<span class="badge ok">Ready</span>{% else %}<span class="badge warn">Incomplete</span>{% endif %}</td>
+  <td class="actions"><a class="iconbtn" href="{% url 'c_supervisor_edit' s.pk %}" aria-label="Edit {{ s.full_name }}">{% icon "pencil" %}</a>
+    <form class="inline" method="post" action="{% url 'c_supervisor_delete' s.pk %}" data-confirm="Remove {{ s.full_name }}, their past projects, and flag any students they hold?">{% csrf_token %}<button class="iconbtn danger" type="submit" aria-label="Remove {{ s.full_name }}">{% icon "trash-2" %}</button></form></td></tr>{% endfor %}
+</tbody></table></div>
+{% else %}<div class="card"><div class="empty"><h3>No supervisors yet</h3><p>Add each supervisor with a specialisation statement and a capacity, or ask them to register.</p></div></div>{% endif %}
+{% endblock %}

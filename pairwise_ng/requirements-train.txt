@@ -1,0 +1,7 @@
+# Only for fine-tuning (training/finetune_sbert.py). Not needed to run the web app.
+torch>=2.2
+sentence-transformers>=3.0
+datasets>=2.19
+accelerate>=0.30
+onnx>=1.16
+onnxruntime>=1.17

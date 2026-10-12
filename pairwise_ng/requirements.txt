@@ -1,0 +1,10 @@
+Django>=5.1,<6
+numpy>=1.26
+onnxruntime>=1.17
+tokenizers>=0.15
+gunicorn>=22
+whitenoise>=6.6
+dj-database-url>=2.1
+psycopg2-binary>=2.9
+# MySQL, the database named in the report: uncomment and set DATABASE_URL=mysql://...
+# mysqlclient>=2.2

@@ -1,0 +1,1 @@
+{% load ui %}{% if v is None %}<span class="muted">none</span>{% else %}<div class="fit{% if v < threshold %} low{% endif %}"><div class="fit-track"><div class="fit-fill" style="--w:{{ v|pct }}%"></div></div><span class="fit-val">{{ v|score }}</span></div>{% endif %}

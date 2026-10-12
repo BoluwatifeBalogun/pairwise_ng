@@ -1,0 +1,8 @@
+{% extends "core/_shell.html" %}{% load ui %}
+{% block title %}{{ title }}, {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ title }}</h1><p>{{ lead }}</p></div></div>
+<div class="card card-pad" style="max-width:640px">{% include "core/_errors.html" %}
+  <form method="post" novalidate>{% csrf_token %}{% for f in form %}{% include "core/_field.html" %}{% endfor %}
+    <div class="form-actions"><button class="btn btn-primary" type="submit" data-busy="Saving">Save</button><a class="btn btn-ghost" href="{% url back %}">Cancel</a></div></form></div>
+{% endblock %}

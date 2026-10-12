@@ -1,0 +1,7 @@
+{% extends "core/_base.html" %}{% load ui %}
+{% block bodyclass %}solo{% endblock %}
+{% block body %}
+<header class="topbar"><div class="wrap topbar-in">{% include "core/_brand.html" %}
+  <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="linkbtn" type="submit">{% icon "log-out" %}Sign out</button></form></div></header>
+<main class="main" id="main"><div class="main-in">{% block content %}{% endblock %}</div></main>
+{% endblock %}
