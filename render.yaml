@@ -3,7 +3,7 @@ services:
     name: pairwise-ng
     runtime: python
     plan: free
-    buildCommand: ./build.sh
+    buildCommand: bash build.sh
     # migrate + seed on every start: with the default SQLite file, Render's free disk is
     # wiped on each restart, so the demo data is rebuilt. Set DATABASE_URL to keep data.
     startCommand: python manage.py migrate --noinput && python manage.py seed_demo && gunicorn pairwise.wsgi --workers 1 --threads 4 --timeout 120
