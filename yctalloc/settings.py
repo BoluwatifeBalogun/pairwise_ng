@@ -1,11 +1,13 @@
-"""Settings for PairWise NG. Change SITE_NAME to rename the system everywhere."""
+"""Settings. SITE_NAME and INSTITUTION_NAME can be changed here or through environment variables."""
 import os
 from pathlib import Path
 
 import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-SITE_NAME = os.environ.get("SITE_NAME", "PairWise NG")
+SITE_NAME = os.environ.get("SITE_NAME", "Project Supervisor Allocation")
+INSTITUTION_NAME = os.environ.get("INSTITUTION_NAME", "Yaba College of Technology")
+INSTITUTION_SHORT = os.environ.get("INSTITUTION_SHORT", "YabaTech")
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "dev-only-change-me-in-production")
 DEBUG = os.environ.get("DEBUG", "1") == "1"
@@ -29,7 +31,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
-ROOT_URLCONF = "pairwise.urls"
+ROOT_URLCONF = "yctalloc.urls"
 TEMPLATES = [{
     "BACKEND": "django.template.backends.django.DjangoTemplates",
     "DIRS": [BASE_DIR / "templates"],
@@ -41,7 +43,7 @@ TEMPLATES = [{
         "core.context.site",
     ]},
 }]
-WSGI_APPLICATION = "pairwise.wsgi.application"
+WSGI_APPLICATION = "yctalloc.wsgi.application"
 
 # SQLite out of the box. Set DATABASE_URL to keep data on a hosted database:
 #   mysql://user:password@host:port/dbname        (filess.io, the report's MySQL)

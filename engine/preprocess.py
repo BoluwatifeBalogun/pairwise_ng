@@ -49,3 +49,14 @@ def project_text(title, keywords="", abstract=""):
     if clean_text(abstract):
         parts.append(clean_text(abstract))
     return ". ".join(parts)
+
+
+def level_from_matric(matric):
+    """ND or HND when the matric number says so (YabaTech style F/HD/24/... or F/ND/24/...),
+    otherwise None."""
+    m = normalise_matric(matric)
+    if re.search(r"(^|/)HD(/|$)", m):
+        return "HND"
+    if re.search(r"(^|/)ND(/|$)", m):
+        return "ND"
+    return None

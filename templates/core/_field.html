@@ -1,5 +1,5 @@
 {% load ui %}<div class="field{% if f.errors %} has-error{% endif %}" id="field-{{ f.name }}">
-<label for="{{ f.id_for_label }}">{{ f.label }}{% if not f.field.required and f.name != 'matric_no' %} <span class="muted" style="font-weight:400">(optional)</span>{% endif %}</label>
+<label for="{{ f.id_for_label }}">{{ f.label }}{% if not f.field.required and f.name != 'matric_no' and f.name != 'level' %} <span class="muted" style="font-weight:400">(optional)</span>{% endif %}</label>
 {{ f }}
 {% if f.help_text %}<span class="help" id="{{ f.id_for_label }}_helptext">{{ f.help_text }}</span>{% endif %}
 {% for e in f.errors %}<span class="err" id="{{ f.id_for_label }}_error">{% icon "triangle-alert" 16 %}<span>{{ e }}</span></span>{% endfor %}

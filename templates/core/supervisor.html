@@ -1,27 +1,27 @@
 {% extends "core/_solo.html" %}{% load ui %}
 {% block title %}Supervisor portal, {{ SITE_NAME }}{% endblock %}
 {% block content %}
-<div class="page-head"><div><h1>{{ sup.full_name }}</h1><p>{{ dept.name }}, {{ dept.institution.name }}, {{ dept.session }} session.</p></div>
-  <div>{% if not sup.approved %}<span class="badge warn">{% icon "info" %} Waiting for coordinator confirmation</span>{% elif dept.published %}<span class="badge ok">{% icon "circle-check" %} Allocation published</span>{% endif %}</div></div>
+<div class="page-head"><div><h1>{{ sup.full_name }}</h1><p>Department of {{ dept.name }}, {{ dept.session }} session.</p></div>
+  <div>{% if not sup.approved %}<span class="badge warn">{% icon "info" %} Waiting for coordinator confirmation</span>{% endif %}{% for g in groups %}<span class="badge ok">{% icon "circle-check" %} {{ g.cycle.level }} allocation published</span> {% endfor %}</div></div>
 <div class="stack">
-{% if dept.published %}
-<div class="card card-pad"><div class="card-head"><h3>Students allocated to you</h3><span class="badge">{{ assigned|length }} of {{ sup.capacity }} places</span></div>
-  {% if assigned %}<div class="table-wrap"><table class="tbl"><thead><tr><th>Matric number</th><th>Name</th><th>Project interest</th><th>Fit</th></tr></thead><tbody>
-  {% for a in assigned %}<tr><td class="num">{{ a.student.matric_no }}</td><td>{{ a.student.full_name }}</td><td>{{ a.student.interest_text }}</td><td>{% include "core/_fit.html" with v=a.fit_score threshold=dept.threshold %}</td></tr>{% endfor %}
-  </tbody></table></div>{% else %}<div class="empty"><h3>No students this session</h3><p>No student was allocated to you in this run.</p></div>{% endif %}</div>
-{% endif %}
+{% for g in groups %}
+<div class="card card-pad"><div class="card-head"><h3>{{ g.cycle.level }} students allocated to you</h3><span class="badge">{{ g.rows|length }} of {{ g.capacity }} {{ g.cycle.level }} places</span></div>
+  {% if g.rows %}<div class="table-wrap"><table class="tbl"><thead><tr><th>Matric number</th><th>Name</th><th>Project interest</th><th>Fit</th></tr></thead><tbody>
+  {% for a in g.rows %}<tr><td class="num">{{ a.student.matric_no }}</td><td>{{ a.student.full_name }}</td><td>{{ a.student.interest_text }}</td><td>{% include "core/_fit.html" with v=a.fit_score threshold=g.cycle.threshold %}</td></tr>{% endfor %}
+  </tbody></table></div>{% else %}<div class="empty"><h3>No {{ g.cycle.level }} students this session</h3><p>No {{ g.cycle.level }} student was allocated to you in this run.</p></div>{% endif %}</div>
+{% endfor %}
 <div class="grid g2" style="align-items:start">
-  <div class="card card-pad"><h3>Specialisation and capacity</h3><p class="muted" style="margin:6px 0 18px">Students are matched to this statement and to your past projects.</p>
+  <div class="card card-pad"><h3>Specialisation and capacity</h3><p class="muted" style="margin:6px 0 18px">Students are matched to this statement and to your past projects. Set how many ND and how many HND students you can take.</p>
     {% include "core/_errors.html" %}
     <form method="post" novalidate>{% csrf_token %}{% for f in form %}{% include "core/_field.html" %}{% endfor %}
-      <div class="form-actions"><button class="btn btn-primary" type="submit" name="save_profile" value="1" data-busy="Saving"{% if dept.published %} disabled{% endif %}>Save profile</button></div></form></div>
+      <div class="form-actions"><button class="btn btn-primary" type="submit" name="save_profile" value="1" data-busy="Saving"{% if frozen %} disabled{% endif %}>Save profile</button></div></form></div>
   <div class="card card-pad"><div class="card-head"><h3>Past projects you supervised</h3><span class="badge">{{ projects|length }}</span></div>
     {% if projects %}<ul style="list-style:none;margin:0 0 18px;padding:0;display:grid;gap:2px">{% for p in projects %}<li class="row" style="justify-content:space-between;flex-wrap:nowrap;padding:8px 0;border-bottom:1px solid var(--line-2)"><span><span style="font-weight:500">{{ p.title }}</span><br><span class="muted" style="font-size:13.5px">{{ p.keywords }}{% if p.session %}, {{ p.session }}{% endif %}</span></span>
       <form class="inline" method="post" action="{% url 'project_delete' p.pk %}" data-confirm="Remove this past project from your profile?">{% csrf_token %}<button class="iconbtn danger" type="submit" aria-label="Remove {{ p.title }}">{% icon "trash-2" %}</button></form></li>{% endfor %}</ul>
     {% else %}<p class="note" style="margin-bottom:18px">{% icon "info" %}<span>No past projects yet. Adding a few makes your profile reflect the work you have actually supervised.</span></p>{% endif %}
     <details class="more"{% if pform.errors %} open{% endif %}><summary>{% icon "plus" %} Add a past project</summary>
       <form method="post" novalidate style="margin-top:12px">{% csrf_token %}{% for f in pform %}{% include "core/_field.html" %}{% endfor %}
-      <button class="btn btn-ghost" type="submit" name="add_project" value="1"{% if dept.published %} disabled{% endif %}>Add project</button></form></details></div>
+      <button class="btn btn-ghost" type="submit" name="add_project" value="1"{% if frozen %} disabled{% endif %}>Add project</button></form></details></div>
 </div>
 </div>
 {% endblock %}

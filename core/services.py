@@ -89,24 +89,29 @@ def explain(student, sup, version, k=3):
 
 
 @transaction.atomic
-def run_allocation(dept, threshold):
-    """Steps 1-8 of the algorithm for one department. Replaces any earlier run."""
+def run_allocation(cycle, threshold):
+    """Steps 1-8 of the algorithm for one level of one department (an allocation cycle).
+    Replaces any earlier run of the same cycle; the other level is untouched."""
+    dept, level = cycle.department, cycle.level
     version = active_version()
-    sups, profiles = profiles_for(dept, version)
-    students = [s for s in dept.students.all() if s.ready]
-    skipped = dept.students.count() - len(students)
+    all_sups, all_profiles = profiles_for(dept, version)
+    pairs = [(s, p) for s, p in zip(all_sups, all_profiles) if s.capacity_for(level) >= 1]
+    sups, profiles = [s for s, _ in pairs], [p for _, p in pairs]
+    pool = dept.students.filter(level=level)
+    students = [s for s in pool if s.ready]
+    skipped = pool.count() - len(students)
     if not sups or not students:
-        return {"ok": False, "error": "You need at least one supervisor with a specialisation "
-                                      "statement and one student with an interest statement."}
+        return {"ok": False, "error": f"You need at least one supervisor who takes {level} students "
+                                      f"and one {level} student with an interest statement."}
     fit = fit_matrix(embed(version, [s.interest_text for s in students]), profiles)
     rows = [{"matric": s.matric_no, "cgpa": float(s.cgpa)} for s in students]
-    capacities = [s.capacity for s in sups]
+    capacities = [s.capacity_for(level) for s in sups]
     allocation, flagged = alloc_engine.allocate(rows, capacities, fit.tolist(), threshold)
     checks = alloc_engine.verify(rows, capacities, fit.tolist(), allocation, flagged)
     order = alloc_engine.priority_order(rows, fit.tolist())
 
-    FitScore.objects.filter(student__department=dept).delete()
-    Allocation.objects.filter(student__department=dept).delete()
+    FitScore.objects.filter(student__in=pool).delete()
+    Allocation.objects.filter(student__in=pool).delete()
     scores, allocs = [], []
     position = {i: p + 1 for p, i in enumerate(order)}
     for i, s in enumerate(students):
@@ -125,30 +130,32 @@ def run_allocation(dept, threshold):
             flag_reason=("no_place" if j is None else "weak_fit") if is_flagged else ""))
     FitScore.objects.bulk_create(scores)
     Allocation.objects.bulk_create(allocs)
-    dept.threshold = threshold
-    dept.last_run_at = timezone.now()
-    dept.last_run_version = version
-    dept.published = False
-    dept.published_at = None
-    dept.save()
+    cycle.threshold = threshold
+    cycle.last_run_at = timezone.now()
+    cycle.last_run_version = version
+    cycle.published = False
+    cycle.published_at = None
+    cycle.save()
     return {"ok": True, "students": len(students), "skipped": skipped, "placed": len(allocation),
             "flagged": len(flagged), "checks": checks, "version": version}
 
 
-def verify_department(dept):
-    """Re-check the stored result against the promises of Section 3.9, including
-    any manual changes the coordinator made afterwards."""
+def verify_cycle(cycle):
+    """Re-check the stored result of one cycle against the promises of Section 3.9,
+    including any manual changes the coordinator made afterwards."""
+    dept, level = cycle.department, cycle.level
     sups = list(dept.supervisors.all())
     load = {s.pk: 0 for s in sups}
-    allocs = list(Allocation.objects.filter(student__department=dept).select_related("student", "supervisor"))
+    allocs = list(Allocation.objects.filter(student__department=dept, student__level=level)
+                  .select_related("student", "supervisor"))
     for a in allocs:
         if a.supervisor_id:
             load[a.supervisor_id] = load.get(a.supervisor_id, 0) + 1
-    capacity_ok = all(load[s.pk] <= s.capacity for s in sups)
+    capacity_ok = all(load[s.pk] <= s.capacity_for(level) for s in sups)
     # CGPA priority: among automatic placements, nobody turned away from a supervisor
     # outranks someone admitted there.
     scores = {}
-    for f in FitScore.objects.filter(student__department=dept):
+    for f in FitScore.objects.filter(student__department=dept, student__level=level):
         scores[(f.student_id, f.supervisor_id)] = f.score
     admitted = {}
     for a in allocs:

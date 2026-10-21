@@ -1,7 +1,7 @@
 {% extends "core/_shell.html" %}{% load ui %}
 {% block title %}Students, {{ SITE_NAME }}{% endblock %}
 {% block content %}
-<div class="page-head"><div><h1>Students</h1><p>{{ counts.students }} records. Matric number identifies each student, so nobody can appear twice.</p></div>
+<div class="page-head"><div><h1>{{ level }} students</h1><p>{{ counts.students }} {{ level_name }} records.{% if counts.students_other %} <a href="?level={{ other_level }}">{{ counts.students_other }} {{ other_level }} students</a> are kept separately.{% endif %} Matric number identifies each student, so nobody can appear twice.</p></div>
   <div class="page-actions"><a class="btn btn-primary" href="{% url 'c_student_add' %}">{% icon "plus" %} Add student</a></div></div>
 <div class="stack">
 <div class="row">
@@ -10,7 +10,7 @@
   <details class="more"><summary>{% icon "upload" %} Import from CSV</summary>
     <form method="post" action="{% url 'c_students_import' %}" enctype="multipart/form-data" class="card card-pad" style="margin-top:8px;max-width:420px">{% csrf_token %}
       {% include "core/_field.html" with f=upload.file %}
-      <p class="help muted" style="font-size:14px;margin-bottom:12px">Columns: matric_no, full_name, cgpa, interest_text. <a href="{% url 'csv_template' 'students_template' %}">Download the template</a>. Existing matric numbers are updated.</p>
+      <p class="help muted" style="font-size:14px;margin-bottom:12px">Columns: matric_no, full_name, cgpa, interest_text, and optionally level (ND or HND; read from the matric number when left out, otherwise {{ level }}). <a href="{% url 'csv_template' 'students_template' %}">Download the template</a>. Existing matric numbers are updated.</p>
       <button class="btn btn-ghost" type="submit" data-busy="Importing">Import</button></form></details>
 </div>
 {% if students %}<div class="table-wrap"><table class="tbl"><thead><tr><th>Matric number</th><th>Name</th><th class="r">CGPA</th><th>Project interest</th><th>Account</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody>
@@ -20,6 +20,6 @@
   <td class="actions"><a class="iconbtn" href="{% url 'c_student_edit' s.matric_no %}" aria-label="Edit {{ s.matric_no }}">{% icon "pencil" %}</a>
     <form class="inline" method="post" action="{% url 'c_student_delete' s.matric_no %}" data-confirm="Remove {{ s.matric_no }} and any allocation they hold?">{% csrf_token %}<button class="iconbtn danger" type="submit" aria-label="Remove {{ s.matric_no }}">{% icon "trash-2" %}</button></form></td></tr>{% endfor %}
 </tbody></table></div>
-{% else %}<div class="card"><div class="empty"><h3>{% if q %}No student matches &ldquo;{{ q }}&rdquo;{% else %}No students yet{% endif %}</h3><p>{% if q %}Try a matric number or part of a name.{% else %}Students can register themselves, or you can add and import them here.{% endif %}</p></div></div>{% endif %}
+{% else %}<div class="card"><div class="empty"><h3>{% if q %}No {{ level }} student matches &ldquo;{{ q }}&rdquo;{% else %}No {{ level }} students yet{% endif %}</h3><p>{% if q %}Try a matric number or part of a name.{% else %}Students can register themselves, or you can add and import them here.{% endif %}</p></div></div>{% endif %}
 </div>
 {% endblock %}

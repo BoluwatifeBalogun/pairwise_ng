@@ -1,11 +1,11 @@
 {% extends "core/_solo.html" %}{% load ui %}
 {% block title %}My allocation, {{ SITE_NAME }}{% endblock %}
 {% block content %}
-<div class="page-head"><div><h1>{% if locked %}Your supervisor{% else %}Your profile{% endif %}</h1><p>{{ student.full_name }}, {{ student.matric_no }}. {{ dept.name }}, {{ dept.institution.name }}, {{ dept.session }} session.</p></div></div>
+<div class="page-head"><div><h1>{% if locked %}Your supervisor{% else %}Your profile{% endif %}</h1><p>{{ student.full_name }}, {{ student.matric_no }}. {{ student.level }} final year project, Department of {{ dept.name }}, {{ dept.session }} session.</p></div></div>
 <div class="stack">
 <div class="card card-pad"><ol class="stages" style="grid-template-columns:repeat(3,minmax(0,1fr))">
   <li class="{% if step > 1 %}done{% else %}now{% endif %}"><b>Complete your profile</b>CGPA and project interest</li>
-  <li class="{% if step > 2 %}done{% elif step == 2 %}now{% endif %}"><b>Allocation</b>The coordinator runs the matching</li>
+  <li class="{% if step > 2 %}done{% elif step == 2 %}now{% endif %}"><b>{{ student.level }} allocation</b>The coordinator runs the matching for your programme</li>
   <li class="{% if step == 3 %}done{% endif %}"><b>Result published</b>Your supervisor appears here</li>
 </ol></div>
 {% if locked %}
@@ -17,13 +17,13 @@
   <div class="grid g-main">
     <div class="card card-pad"><h3>Why this supervisor</h3><p class="muted" style="margin:6px 0 16px">These are the parts of their profile closest in meaning to what you wrote.</p>
       <div class="why">{% for w in why %}<div class="why-row"><span>{{ w.label }}</span>{% include "core/_fit.html" with v=w.score threshold=0 %}</div>{% empty %}<p class="muted">No explanation is available for this placement.</p>{% endfor %}</div></div>
-    <div class="card card-pad"><h3>What you submitted</h3><dl class="kv" style="margin-top:14px"><dt>Matric number</dt><dd class="num">{{ student.matric_no }}</dd><dt>CGPA</dt><dd class="num">{{ student.cgpa }} of {{ dept.cgpa_scale|floatformat:2 }}</dd></dl><p style="margin-top:14px">&ldquo;{{ student.interest_text }}&rdquo;</p>
+    <div class="card card-pad"><h3>What you submitted</h3><dl class="kv" style="margin-top:14px"><dt>Matric number</dt><dd class="num">{{ student.matric_no }}</dd><dt>Programme</dt><dd>{{ student.level }}</dd><dt>CGPA</dt><dd class="num">{{ student.cgpa }} of {{ dept.cgpa_scale|floatformat:2 }}</dd></dl><p style="margin-top:14px">&ldquo;{{ student.interest_text }}&rdquo;</p>
       {% if alloc.manual %}<p class="note" style="margin-top:14px">{% icon "info" %}Your coordinator placed you manually after reviewing your case.</p>{% endif %}</div>
   </div>
   {% else %}<div class="card"><div class="empty"><h3>You have not been placed yet</h3><p>Results are published, but your record was not part of this allocation. Contact your project coordinator.</p></div></div>{% endif %}
 {% else %}
 <div class="grid g-main">
-  <div class="card card-pad"><h3>Profile</h3><p class="muted" style="margin:6px 0 18px">You can edit this until the coordinator publishes the allocation.</p>
+  <div class="card card-pad"><h3>Profile</h3><p class="muted" style="margin:6px 0 18px">You can edit this until the coordinator publishes the {{ student.level }} allocation.</p>
     {% include "core/_errors.html" %}
     <form method="post" novalidate>{% csrf_token %}
       {% for f in form %}{% include "core/_field.html" %}{% endfor %}

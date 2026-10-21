@@ -10,9 +10,10 @@
   <div class="form-actions"><button class="btn btn-primary btn-lg" type="submit" data-busy="Signing in">{% icon "lock" %} Sign in</button><a href="{% url 'register' %}">Create an account</a></div>
 </form>
 {% if DEMO_MODE %}<div class="demo-accts"><h3>Demonstration accounts</h3><span class="muted">Choose one to fill the form. The password is demo12345.</span>
-  <button type="button" data-fill="coordinator@yabatech.demo"><span>Coordinator, Computer Science, YABATECH</span><code>48 students</code></button>
-  <button type="button" data-fill="student@yabatech.demo"><span>Student, Computer Science, YABATECH</span><code>4.00 scale</code></button>
-  <button type="button" data-fill="supervisor@yabatech.demo"><span>Supervisor, Computer Science, YABATECH</span><code>5 places</code></button>
-  <button type="button" data-fill="coordinator@abu.demo"><span>Coordinator, Electrical Engineering, ABU</span><code>5.00 scale</code></button>
+  <button type="button" data-fill="coordinator@yabatech.demo"><span>Coordinator, Computer Science</span><code>HND and ND</code></button>
+  <button type="button" data-fill="student@yabatech.demo"><span>HND student, Computer Science</span><code>F/HD/24/...</code></button>
+  <button type="button" data-fill="student.nd@yabatech.demo"><span>ND student, Computer Science</span><code>F/ND/24/...</code></button>
+  <button type="button" data-fill="supervisor@yabatech.demo"><span>Supervisor, Computer Science</span><code>5 HND, 3 ND</code></button>
+  <button type="button" data-fill="coordinator.ee@yabatech.demo"><span>Coordinator, Electrical and Electronic Engineering</span><code>second department</code></button>
 </div>{% endif %}
 {% endblock %}

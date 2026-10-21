@@ -1,29 +1,29 @@
 {% extends "core/_shell.html" %}{% load ui %}
 {% block title %}Overview, {{ SITE_NAME }}{% endblock %}
 {% block content %}
-<div class="page-head"><div><h1>{{ dept.session }} allocation</h1><p>{{ dept.name }}, {{ dept.institution.name }}. CGPA on a {{ dept.cgpa_scale|floatformat:2 }} scale.</p></div>
+<div class="page-head"><div><h1>{{ level }} allocation, {{ dept.session }}</h1><p>{{ level_name }} students of the Department of {{ dept.name }}. CGPA on a {{ dept.cgpa_scale|floatformat:2 }} scale.{% if counts.students_other %} The {{ other_level }} students have <a href="?level={{ other_level }}">their own allocation</a>.{% endif %}</p></div>
   <div class="page-actions">{% if stage == 2 %}<a class="btn btn-primary" href="{% url 'c_run' %}">{% icon "play" %} Run allocation</a>{% elif stage == 3 %}<a class="btn btn-primary" href="{% url 'c_flagged' %}">{% icon "flag" %} Review {{ counts.open_flags }} flagged</a>{% elif stage == 4 %}<a class="btn btn-primary" href="{% url 'c_report' %}">{% icon "send" %} Publish results</a>{% elif stage == 5 %}<a class="btn btn-ghost" href="{% url 'c_report' %}">{% icon "printer" %} View report</a>{% endif %}</div></div>
 <div class="stack">
 <div class="card card-pad"><ol class="stages">
-  <li class="{% if stage > 1 %}done{% else %}now{% endif %}"><b>Collect records</b>Students, supervisors, past projects</li>
+  <li class="{% if stage > 1 %}done{% else %}now{% endif %}"><b>Collect records</b>{{ level }} students, supervisors, past projects</li>
   <li class="{% if stage > 2 %}done{% elif stage == 2 %}now{% endif %}"><b>Run allocation</b>SBERT fit scores, CGPA priority</li>
   <li class="{% if stage > 3 %}done{% elif stage == 3 %}now{% endif %}"><b>Review flagged</b>Weak matches, unplaced students</li>
   <li class="{% if stage > 4 %}done{% elif stage == 4 %}now{% endif %}"><b>Publish</b>Students and supervisors see results</li>
   <li class="{% if stage == 5 %}done{% endif %}"><b>Report</b>Print or export the final list</li>
 </ol></div>
 <div class="grid g4">
-  <div class="card stat"><span>Students</span><b class="num" data-count="{{ counts.students }}">{{ counts.students }}</b><small>{{ counts.students_ready }} with an interest statement</small></div>
-  <div class="card stat"><span>Supervisors</span><b class="num" data-count="{{ counts.supervisors }}">{{ counts.supervisors }}</b><small>{{ counts.supervisors_ready }} ready{% if counts.pending %}, {{ counts.pending }} to confirm{% endif %}</small></div>
-  <div class="card stat"><span>Places available</span><b class="num" data-count="{{ counts.capacity }}">{{ counts.capacity }}</b><small>{% if counts.capacity < counts.students_ready %}Fewer places than students{% else %}Enough for every student{% endif %}</small></div>
+  <div class="card stat"><span>{{ level }} students</span><b class="num" data-count="{{ counts.students }}">{{ counts.students }}</b><small>{{ counts.students_ready }} with an interest statement</small></div>
+  <div class="card stat"><span>Supervisors</span><b class="num" data-count="{{ counts.supervisors }}">{{ counts.supervisors }}</b><small>{{ counts.supervisors_ready }} take {{ level }} students{% if counts.pending %}, {{ counts.pending }} to confirm{% endif %}</small></div>
+  <div class="card stat"><span>{{ level }} places available</span><b class="num" data-count="{{ counts.capacity }}">{{ counts.capacity }}</b><small>{% if counts.capacity < counts.students_ready %}Fewer places than students{% else %}Enough for every student{% endif %}</small></div>
   <div class="card stat"><span>Past project records</span><b class="num" data-count="{{ counts.projects }}">{{ counts.projects }}</b><small>Used to build supervisor profiles</small></div>
 </div>
-{% if counts.capacity < counts.students_ready %}<div class="note warn">{% icon "triangle-alert" %}<span>There are {{ counts.students_ready }} students but only {{ counts.capacity }} places. The students who cannot be placed will be flagged, not forced onto a full supervisor. Raise a capacity or add a supervisor to avoid this.</span></div>{% endif %}
+{% if counts.capacity < counts.students_ready %}<div class="note warn">{% icon "triangle-alert" %}<span>There are {{ counts.students_ready }} {{ level }} students but only {{ counts.capacity }} {{ level }} places. The students who cannot be placed will be flagged, not forced onto a full supervisor. Raise a capacity or add a supervisor to avoid this.</span></div>{% endif %}
 <div class="grid g-main">
-  <div class="card card-pad"><div class="card-head"><h3>Supervisor load</h3>{% if dept.last_run_at %}<span class="muted" style="font-size:14px">Last run {{ dept.last_run_at|date:"j M Y, H:i" }}</span>{% endif %}</div>
-    {% for s in loads %}<div class="loadrow"><span>{{ s.full_name }}</span><div class="fit-track"><div class="fit-fill" style="--w:{% widthratio s.n s.capacity 100 %}%"></div></div><span class="num muted" style="text-align:right">{{ s.n }} of {{ s.capacity }}</span></div>
-    {% empty %}<div class="empty"><h3>No allocation yet</h3><p>Once you run the allocation, each supervisor's load appears here.</p><a class="btn btn-primary" href="{% url 'c_run' %}">Go to run allocation</a></div>{% endfor %}</div>
-  <div class="card card-pad"><h3>This run</h3>
-    <dl class="kv" style="margin-top:14px"><dt>Model</dt><dd>{{ dept.last_run_version.name|default:version.name|default:"None active" }}</dd><dt>Threshold</dt><dd class="num">{{ dept.threshold|score }}</dd><dt>Placed</dt><dd class="num">{{ counts.placed }}</dd><dt>Flagged</dt><dd class="num">{{ counts.flags }} ({{ counts.open_flags }} open)</dd><dt>Status</dt><dd>{% if dept.published %}<span class="badge ok">Published</span>{% elif dept.last_run_at %}<span class="badge warn">Not published</span>{% else %}<span class="badge">Not run</span>{% endif %}</dd></dl></div>
+  <div class="card card-pad"><div class="card-head"><h3>{{ level }} supervisor load</h3>{% if cycle.last_run_at %}<span class="muted" style="font-size:14px">Last run {{ cycle.last_run_at|date:"j M Y, H:i" }}</span>{% endif %}</div>
+    {% for s in loads %}<div class="loadrow"><span>{{ s.sup.full_name }}</span><div class="fit-track"><div class="fit-fill" style="--w:{% widthratio s.n s.capacity 100 %}%"></div></div><span class="num muted" style="text-align:right">{{ s.n }} of {{ s.capacity }}</span></div>
+    {% empty %}<div class="empty"><h3>No {{ level }} allocation yet</h3><p>Once you run the {{ level }} allocation, each supervisor's load appears here.</p><a class="btn btn-primary" href="{% url 'c_run' %}">Go to run allocation</a></div>{% endfor %}</div>
+  <div class="card card-pad"><h3>This {{ level }} run</h3>
+    <dl class="kv" style="margin-top:14px"><dt>Model</dt><dd>{{ cycle.last_run_version.name|default:version.name|default:"None active" }}</dd><dt>Threshold</dt><dd class="num">{{ cycle.threshold|score }}</dd><dt>Placed</dt><dd class="num">{{ counts.placed }}</dd><dt>Flagged</dt><dd class="num">{{ counts.flags }} ({{ counts.open_flags }} open)</dd><dt>Status</dt><dd>{% if cycle.published %}<span class="badge ok">Published</span>{% elif cycle.last_run_at %}<span class="badge warn">Not published</span>{% else %}<span class="badge">Not run</span>{% endif %}</dd>{% if other_cycle %}<dt>{{ other_level }} run</dt><dd>{% if other_cycle.published %}<span class="badge ok">Published</span>{% elif other_cycle.last_run_at %}<span class="badge warn">Not published</span>{% else %}<span class="badge">Not run</span>{% endif %}</dd>{% endif %}</dl></div>
 </div>
 </div>
 {% endblock %}

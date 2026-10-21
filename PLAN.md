@@ -1,9 +1,9 @@
-# PairWise NG: plan, algorithm and flow
+# Project Supervisor Allocation: plan, algorithm and flow
 
 Implementation of "Design and Implementation of Students-to-Supervisor Allocation System for
 Final Year Projects Using Sentence-BERT (SBERT) Semantic Matching Model" (Chapters 1 to 4).
-Case study: tertiary institutions across Nigeria. "PairWise NG" is a working name; change
-`SITE_NAME` in `pairwise/settings.py` to rename it everywhere.
+Case study: the departments of Yaba College of Technology, with ND and HND final year projects
+allocated separately. Names come from `INSTITUTION_NAME` and `SITE_NAME` in `yctalloc/settings.py`.
 
 ## 1. What the report asks for, and where it lives in the code
 
@@ -62,10 +62,12 @@ Supervisor: register -> specialisation, capacity, projects --+-> Coordinator: re
 Report tables: `users`, `students` (matric_no primary key), `supervisors`, `past_projects`,
 `model_versions`, `fit_scores`, `allocations` (matric_no primary key, so one supervisor per student).
 
-Added for the Nigeria-wide case study:
+Added beyond the report:
 - `institutions`: name, type, state, geopolitical zone, CGPA scale (4.00 or 5.00).
-- `departments`: session, matric format, threshold, publication state. Each allocation runs
-  inside one department, so CGPAs are always compared on the same scale.
+- `departments`: session and matric format.
+- `cycles`: one per department and level (ND, HND): threshold, last run, publication state.
+  Each allocation runs inside one cycle, so ND and HND students never compete for the same places
+  and CGPAs are always compared on the same scale. Supervisors carry a capacity per level.
 - `embedding_cache`: the "stored embeddings" box of Figure 3.1.
 
 Integrity rules in the database itself: CGPA within range, capacity at least one, unique matric.
@@ -115,8 +117,8 @@ features" landing pattern. Its suggested navy palette was replaced by the green 
 
 ## 8. Departures from the write-up (state these in the report)
 
-1. CGPA range: the report fixes 0.00 to 4.00. Universities use 5.00, so the scale is set per institution.
-2. Tables: three added (institutions, departments, embedding cache).
+1. CGPA range: the report fixes 0.00 to 4.00. The scale is a setting per institution (4.00 for YabaTech).
+2. Tables: four added (institutions, departments, cycles, embedding cache). Students carry a level and supervisors a capacity per level, because ND and HND projects are allocated separately (supervisor's review).
 3. Inference library: ONNX Runtime serves the model; sentence-transformers and PyTorch are used for fine-tuning only.
 4. Supervisors who register themselves must be confirmed by the coordinator before they receive students.
 5. Publishing is blocked until every flagged case is resolved, and records are locked while published.

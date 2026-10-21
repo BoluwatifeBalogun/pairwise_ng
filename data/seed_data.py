@@ -5,20 +5,21 @@ records (see data/past_projects_template.csv) before any real allocation."""
 INSTITUTIONS = [
     # name, short, kind, state, zone, cgpa scale
     ("Yaba College of Technology", "YABATECH", "College of Technology", "Lagos", "South West", 4),
-    ("Ahmadu Bello University, Zaria", "ABU", "University", "Kaduna", "North West", 5),
-    ("University of Nigeria, Nsukka", "UNN", "University", "Enugu", "South East", 5),
-    ("University of Benin", "UNIBEN", "University", "Edo", "South South", 5),
-    ("Kwara State Polytechnic, Ilorin", "KWARAPOLY", "Polytechnic", "Kwara", "North Central", 4),
-    ("University of Maiduguri", "UNIMAID", "University", "Borno", "North East", 5),
 ]
 
-EMPTY_DEPARTMENTS = [("UNN", "Computer Science"), ("UNIBEN", "Business Administration"),
-                     ("KWARAPOLY", "Mass Communication"), ("UNIMAID", "Agricultural Economics")]
+# Departments created without demonstration people, so real staff and students can register.
+EMPTY_DEPARTMENTS = [("YABATECH", d) for d in [
+    "Computer Engineering", "Civil Engineering", "Mechanical Engineering", "Statistics",
+    "Mass Communication", "Accountancy", "Business Administration", "Marketing",
+    "Food Technology", "Architecture", "Building Technology", "Science Laboratory Technology"]]
+
+YCT_MATRIC = r"^[FP]/(HD|ND)/\d{2}/\d{7}$"
 
 CS = {
     "institution": "YABATECH", "name": "Computer Science", "session": "2025/2026",
-    "matric_pattern": r"^[FP]/(HD|ND)/\d{2}/\d{7}$", "matric_example": "F/HD/24/3210001",
-    "matric_fmt": "F/HD/24/32100{:02d}", "cgpa_range": (2.05, 3.95),
+    "matric_pattern": YCT_MATRIC, "matric_example": "F/HD/24/3210001",
+    "matric_fmt": "F/HD/24/32100{:02d}", "nd_matric_fmt": "F/ND/24/32101{:02d}", "cgpa_range": (2.05, 3.95),
+    "nd_capacity": 3,
     "supervisors": [
         ("Dr. Adaeze Okonkwo", 5, "Web application development, e-commerce platforms and online business systems",
          ["Design and implementation of an online marketplace for Aba-made footwear | e-commerce, web, shopping cart, payment",
@@ -121,6 +122,36 @@ CS = {
           "Timetable scheduling system for a department using a genetic algorithm | scheduling, timetable, optimisation",
           "Peer tutoring matching platform for undergraduates | tutoring, matching, education platform"]),
     ],
+    "nd_interests": [
+        "a website where students can buy and sell used textbooks",
+        "online shop for a small boutique with cart and checkout",
+        "a simple website for a church to post announcements and events",
+        "website for booking a barbing salon appointment online",
+        "an Android app that shows bus routes from Yaba to other parts of Lagos",
+        "mobile app for keeping track of daily sales in a provision store",
+        "a phone app that reminds people to drink water and take breaks",
+        "app for finding nearby mechanics and calling them",
+        "predicting whether a student will pass a course from their test scores",
+        "using past data to guess how many customers a restaurant will get on weekends",
+        "a program that groups customers of a shop by what they buy",
+        "a simple chatbot that answers common questions about our department",
+        "sending a text message alert when a water tank is almost empty",
+        "controlling a bulb and a fan from a phone over WiFi",
+        "setting up a small office network with shared printer and internet",
+        "a door alarm that sends a notification when someone opens it",
+        "checking if a website link is safe before clicking it",
+        "a program that locks files with a password so nobody else can open them",
+        "keeping records of patients in a small clinic on a computer",
+        "a system for recording library books and who borrowed them",
+        "computerised record of staff in a small company with their salaries",
+        "a student result checking portal for a secondary school",
+        "a quiz app that tests students on computer basics",
+        "a website where lecturers can post notes and students download them",
+        "taking class attendance with a fingerprint or face scan",
+        "recognising handwritten digits from a picture",
+        "a system that sorts ripe and unripe tomatoes from photos",
+        "a game that teaches primary school pupils to type fast",
+    ],
     "interests": [
         "I want to build an online shop where people can buy thrift clothes and pay with their card",
         "A website for booking event halls and paying deposits online",
@@ -174,9 +205,10 @@ CS = {
 }
 
 EE = {
-    "institution": "ABU", "name": "Electrical and Electronics Engineering", "session": "2025/2026",
-    "matric_pattern": r"^U\d{2}[A-Z]{2}\d{4}$", "matric_example": "U21EE1001",
-    "matric_fmt": "U21EE10{:02d}", "cgpa_range": (2.4, 4.85),
+    "institution": "YABATECH", "name": "Electrical and Electronic Engineering", "session": "2025/2026",
+    "matric_pattern": YCT_MATRIC, "matric_example": "F/HD/24/3220001",
+    "matric_fmt": "F/HD/24/32200{:02d}", "nd_matric_fmt": "F/ND/24/32201{:02d}", "cgpa_range": (2.05, 3.95),
+    "nd_capacity": 3,
     "supervisors": [
         ("Prof. Sani Abubakar", 4, "Power systems, renewable energy and solar photovoltaic design",
          ["Design of a 5 kVA solar photovoltaic system for a rural health centre | solar PV, inverter, sizing",
@@ -218,6 +250,20 @@ EE = {
           "Construction of an automatic voltage stabiliser | voltage regulation, autotransformer",
           "Brushless DC motor drive for an electric tricycle | BLDC, motor drive, electric vehicle",
           "Design of a battery management system for lithium-ion packs | BMS, battery, power electronics"]),
+    ],
+    "nd_interests": [
+        "wiring a solar panel to charge phones in a small shop",
+        "a small inverter that can power a TV during NEPA outage",
+        "automatic street light that comes on at night",
+        "a water pump that stops by itself when the tank is full",
+        "a digital clock with alarm built from a microcontroller",
+        "a device that measures room temperature and shows it on a screen",
+        "a doorbell that rings on your phone",
+        "a line following toy car",
+        "a simple FM radio transmitter for a hostel",
+        "measuring how strong phone signal is in different parts of campus",
+        "a prepaid meter model for a hostel room",
+        "fixing and rewinding a ceiling fan motor",
     ],
     "interests": [
         "I want to design solar power for a village school that has no light",

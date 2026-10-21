@@ -1,12 +1,12 @@
 {% extends "core/_shell.html" %}{% load ui %}
 {% block title %}{{ student.matric_no }}, {{ SITE_NAME }}{% endblock %}
 {% block content %}
-<div class="page-head"><div><h1>{{ student.full_name }}</h1><p class="num">{{ student.matric_no }}, CGPA {{ student.cgpa }} of {{ dept.cgpa_scale|floatformat:2 }}{% if alloc %}, served {{ alloc.priority_position }} in priority order{% endif %}</p></div>
+<div class="page-head"><div><h1>{{ student.full_name }}</h1><p class="num">{{ student.matric_no }}, {{ student.level }}, CGPA {{ student.cgpa }} of {{ dept.cgpa_scale|floatformat:2 }}{% if alloc %}, served {{ alloc.priority_position }} in priority order{% endif %}</p></div>
   <div class="page-actions"><a class="btn btn-ghost" href="{% url 'c_run' %}">Back to result</a><a class="btn btn-ghost" href="{% url 'c_student_edit' student.matric_no %}">{% icon "pencil" %} Edit</a></div></div>
 <div class="grid g-main">
-  <div class="card card-pad"><div class="card-head"><h3>Every supervisor, ranked by fit</h3><span class="muted" style="font-size:14px">Threshold {{ dept.threshold|score }}</span></div>
-    {% for f in scores %}<div class="opt" style="grid-template-columns:28px minmax(0,1fr) 170px auto;{% if f.is_assigned %}border-color:var(--green);background:var(--mist){% endif %}"><span class="num muted">{{ f.rank }}</span><span><span style="font-weight:550">{{ f.supervisor.full_name }}</span><br><span class="muted" style="font-size:13.5px">{{ f.supervisor.specialisation_text }}</span></span>{% include "core/_fit.html" with v=f.score threshold=dept.threshold %}
-      <span>{% if f.is_assigned %}<span class="badge ok">Allocated</span>{% elif f.load >= f.supervisor.capacity %}<span class="badge">Full</span>{% else %}<span class="badge">{{ f.load }} of {{ f.supervisor.capacity }}</span>{% endif %}</span></div>
+  <div class="card card-pad"><div class="card-head"><h3>Every supervisor, ranked by fit</h3><span class="muted" style="font-size:14px">{{ student.level }} threshold {{ cycle.threshold|score }}</span></div>
+    {% for f in scores %}<div class="opt" style="grid-template-columns:28px minmax(0,1fr) 170px auto;{% if f.is_assigned %}border-color:var(--green);background:var(--mist){% endif %}"><span class="num muted">{{ f.rank }}</span><span><span style="font-weight:550">{{ f.supervisor.full_name }}</span><br><span class="muted" style="font-size:13.5px">{{ f.supervisor.specialisation_text }}</span></span>{% include "core/_fit.html" with v=f.score threshold=cycle.threshold %}
+      <span>{% if f.is_assigned %}<span class="badge ok">Allocated</span>{% elif f.load >= f.cap %}<span class="badge">Full</span>{% else %}<span class="badge">{{ f.load }} of {{ f.cap }}</span>{% endif %}</span></div>
     {% empty %}<div class="empty"><h3>No fit scores yet</h3><p>Scores appear after the allocation is run with this student included.</p></div>{% endfor %}</div>
   <div class="stack">
     <div class="card card-pad"><h3>Interest statement</h3><p style="margin-top:10px">{% if student.interest_text %}&ldquo;{{ student.interest_text }}&rdquo;{% else %}<span class="badge warn">Missing</span>{% endif %}</p></div>

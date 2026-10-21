@@ -1,23 +1,23 @@
 {% extends "core/_shell.html" %}{% load ui %}
 {% block title %}Flagged cases, {{ SITE_NAME }}{% endblock %}
 {% block content %}
-<div class="page-head"><div><h1>Flagged cases</h1><p>Students the rule would not settle on its own: a match below your threshold of {{ dept.threshold|score }}, or no place left. Resolve each one before publishing.</p></div>
-  <div class="page-actions">{% if not counts.open_flags and dept.last_run_at %}<a class="btn btn-primary" href="{% url 'c_report' %}">{% icon "send" %} Continue to publish</a>{% endif %}</div></div>
+<div class="page-head"><div><h1>Flagged {{ level }} cases</h1><p>{{ level }} students the rule would not settle on its own: a match below your threshold of {{ cycle.threshold|score }}, or no place left. Resolve each one before publishing the {{ level }} allocation.</p></div>
+  <div class="page-actions">{% if not counts.open_flags and cycle.last_run_at %}<a class="btn btn-primary" href="{% url 'c_report' %}">{% icon "send" %} Continue to publish</a>{% endif %}</div></div>
 <div class="stack">
 {% for a in flagged %}<div class="card card-pad"{% if a.resolved %} style="opacity:.78"{% endif %}>
   <div class="card-head"><div><h3><a class="rowlink" href="{% url 'c_student_detail' a.student.matric_no %}" style="text-decoration:none">{{ a.student.full_name }}</a></h3><span class="muted num" style="font-size:14.5px">{{ a.student.matric_no }}, CGPA {{ a.student.cgpa }}</span></div>
     {% if a.resolved %}<span class="badge ok">{% icon "circle-check" %} Resolved</span>{% elif a.supervisor %}<span class="badge warn">{% icon "flag" %} Weak match</span>{% else %}<span class="badge bad">{% icon "flag" %} No place left</span>{% endif %}</div>
   <p>&ldquo;{{ a.student.interest_text }}&rdquo;</p>
   <p class="muted" style="margin-top:10px;font-size:15px">{% if a.supervisor %}Currently with <b style="color:var(--ink)">{{ a.supervisor.full_name }}</b>{% if a.fit_score is not None %} at fit {{ a.fit_score|score }}{% endif %}{% if a.choice_rank %}, choice {{ a.choice_rank }} on this student's list{% endif %}.{% else %}Not placed. Free a place by raising a supervisor's capacity, then assign below.{% endif %}{% if a.resolved %} {{ a.resolution }}.{% endif %}</p>
-  {% if not a.resolved and not dept.published %}
+  {% if not a.resolved and not cycle.published %}
   <div class="row" style="margin-top:14px">{% if a.supervisor %}<form class="inline" method="post">{% csrf_token %}<input type="hidden" name="matric" value="{{ a.pk }}"><button class="btn btn-ghost" type="submit" name="accept" value="1">{% icon "check" %} Accept this match</button></form>{% endif %}</div>
   <details class="more"{% if not a.supervisor %} open{% endif %}><summary>{% icon "chevron-right" 16 %} Place with another supervisor</summary>
     <div class="opts">{% for o in a.options %}{% if o.sup.pk != a.supervisor_id %}<form method="post" class="opt">{% csrf_token %}<input type="hidden" name="matric" value="{{ a.pk }}"><input type="hidden" name="supervisor" value="{{ o.sup.pk }}">
       <span><span style="font-weight:550">{{ o.sup.full_name }}</span><br><span class="muted" style="font-size:13.5px">{{ o.sup.specialisation_text }}</span></span>
-      {% include "core/_fit.html" with v=o.score threshold=dept.threshold %}
+      {% include "core/_fit.html" with v=o.score threshold=cycle.threshold %}
       {% if o.free > 0 %}<button class="btn btn-ghost btn-sm" type="submit" name="assign" value="1">Assign ({{ o.free }} free)</button>{% else %}<a class="badge" href="{% url 'c_supervisor_edit' o.sup.pk %}" title="Raise capacity to free a place">Full, edit capacity</a>{% endif %}</form>{% endif %}{% endfor %}</div></details>
   {% endif %}
 </div>
-{% empty %}<div class="card"><div class="empty"><h3>{% if dept.last_run_at %}Nothing was flagged{% else %}No allocation yet{% endif %}</h3><p>{% if dept.last_run_at %}Every student was placed at or above the threshold.{% else %}Flagged cases appear here after you run the allocation.{% endif %}</p></div></div>{% endfor %}
+{% empty %}<div class="card"><div class="empty"><h3>{% if cycle.last_run_at %}Nothing was flagged{% else %}No {{ level }} allocation yet{% endif %}</h3><p>{% if cycle.last_run_at %}Every {{ level }} student was placed at or above the threshold.{% else %}Flagged cases appear here after you run the {{ level }} allocation.{% endif %}</p></div></div>{% endfor %}
 </div>
 {% endblock %}

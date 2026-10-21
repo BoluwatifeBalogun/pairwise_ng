@@ -1,22 +1,22 @@
 {% extends "core/_shell.html" %}{% load ui %}
 {% block title %}Run allocation, {{ SITE_NAME }}{% endblock %}
 {% block content %}
-<div class="page-head"><div><h1>Run allocation</h1><p>Encodes every interest statement and supervisor profile, scores every pair, then places students from the highest CGPA down.</p></div></div>
+<div class="page-head"><div><h1>Run the {{ level }} allocation</h1><p>Encodes every {{ level }} interest statement and supervisor profile, scores every pair, then places students from the highest CGPA down. The {{ other_level }} allocation is a separate run.</p></div></div>
 <div class="stack">
 <div class="card card-pad"><form method="post" class="row" style="align-items:flex-end;gap:18px">{% csrf_token %}
-  <div class="field" style="margin:0;max-width:240px"><label for="threshold">Minimum acceptable fit score</label><input id="threshold" name="threshold" type="number" min="0" max="1" step="0.01" value="{% if dept.last_run_at %}{{ dept.threshold|score }}{% else %}{{ default_threshold|score }}{% endif %}" inputmode="decimal" aria-describedby="th-help"></div>
-  <button class="btn btn-primary btn-lg" type="submit" data-busy="Running"{% if dept.published %} disabled{% endif %}{% if dept.last_run_at %} data-confirm="Run again? This replaces the current result, including any manual placements."{% endif %}>{% icon "play" %} {% if dept.last_run_at %}Run again{% else %}Run allocation{% endif %}</button>
-  <p class="muted" id="th-help" style="flex:1 1 280px;font-size:14.5px">A student placed below this score is flagged for your review. {{ counts.students_ready }} students and {{ counts.supervisors_ready }} supervisors ({{ counts.capacity }} places) will take part, using {{ version.name|default:"no active model" }}.</p>
-</form>{% if dept.published %}<p class="note warn" style="margin-top:14px">{% icon "lock" %}<span>This allocation is published. Unpublish it on the Publish and reports page before running again.</span></p>{% endif %}</div>
+  <div class="field" style="margin:0;max-width:240px"><label for="threshold">Minimum acceptable fit score</label><input id="threshold" name="threshold" type="number" min="0" max="1" step="0.01" value="{% if cycle.last_run_at %}{{ cycle.threshold|score }}{% else %}{{ default_threshold|score }}{% endif %}" inputmode="decimal" aria-describedby="th-help"></div>
+  <button class="btn btn-primary btn-lg" type="submit" data-busy="Running"{% if cycle.published %} disabled{% endif %}{% if cycle.last_run_at %} data-confirm="Run the {{ level }} allocation again? This replaces the current {{ level }} result, including any manual placements."{% endif %}>{% icon "play" %} {% if cycle.last_run_at %}Run {{ level }} again{% else %}Run {{ level }} allocation{% endif %}</button>
+  <p class="muted" id="th-help" style="flex:1 1 280px;font-size:14.5px">A student placed below this score is flagged for your review. {{ counts.students_ready }} {{ level }} students and {{ counts.supervisors_ready }} supervisors ({{ counts.capacity }} {{ level }} places) will take part, using {{ version.name|default:"no active model" }}.</p>
+</form>{% if cycle.published %}<p class="note warn" style="margin-top:14px">{% icon "lock" %}<span>The {{ level }} allocation is published. Unpublish it on the Publish and reports page before running again.</span></p>{% endif %}</div>
 {% if allocs %}
-<div class="row"><h3>Result in priority order</h3><span class="spacer"></span><span class="badge ok">{{ counts.placed }} placed</span>{% if counts.flags %}<a class="badge warn" href="{% url 'c_flagged' %}" style="text-decoration:none">{% icon "flag" %} {{ counts.flags }} flagged</a>{% endif %}</div>
+<div class="row"><h3>{{ level }} result in priority order</h3><span class="spacer"></span><span class="badge ok">{{ counts.placed }} placed</span>{% if counts.flags %}<a class="badge warn" href="{% url 'c_flagged' %}" style="text-decoration:none">{% icon "flag" %} {{ counts.flags }} flagged</a>{% endif %}</div>
 <div class="table-wrap"><table class="tbl"><thead><tr><th class="r">Order</th><th>Matric number</th><th>Name</th><th class="r">CGPA</th><th>Allocated to</th><th>Fit</th><th>Choice</th><th>Remark</th></tr></thead><tbody>
 {% for a in allocs %}<tr{% if a.flagged %} class="is-flag"{% endif %}><td class="r num muted">{{ a.priority_position }}</td><td class="num"><a class="rowlink" href="{% url 'c_student_detail' a.student.matric_no %}">{{ a.student.matric_no }}</a></td><td>{{ a.student.full_name }}</td><td class="r num">{{ a.student.cgpa }}</td>
   <td>{% if a.supervisor %}{{ a.supervisor.full_name }}{% else %}<span class="muted">Not placed</span>{% endif %}</td>
-  <td>{% include "core/_fit.html" with v=a.fit_score threshold=dept.threshold %}</td>
+  <td>{% include "core/_fit.html" with v=a.fit_score threshold=cycle.threshold %}</td>
   <td class="num">{% if a.choice_rank == 1 %}First{% elif a.choice_rank %}{{ a.choice_rank }}{% endif %}</td>
   <td>{% if a.manual %}<span class="badge">Placed manually</span>{% elif a.flag_reason == "no_place" and not a.supervisor %}<span class="badge bad">No place left</span>{% elif a.flagged and a.resolved %}<span class="badge">Weak match accepted</span>{% elif a.flagged %}<span class="badge warn">Weak match</span>{% elif a.choice_rank == 1 %}<span class="badge ok">First choice</span>{% else %}<span class="badge">Moved to next best</span>{% endif %}</td></tr>{% endfor %}
 </tbody></table></div>
-{% else %}<div class="card"><div class="empty"><h3>No allocation has been run this session</h3><p>Set the threshold above and run. A full department takes about a second.</p></div></div>{% endif %}
+{% else %}<div class="card"><div class="empty"><h3>No {{ level }} allocation has been run this session</h3><p>Set the threshold above and run. A full programme takes about a second.</p></div></div>{% endif %}
 </div>
 {% endblock %}

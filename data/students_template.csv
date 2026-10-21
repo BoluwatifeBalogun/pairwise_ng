@@ -1,2 +1,3 @@
-matric_no,full_name,cgpa,interest_text
-F/HD/24/3210099,Example Student,3.21,I want to build an online shop where people can buy thrift clothes
+matric_no,full_name,level,cgpa,interest_text
+F/HD/24/3210099,Example HND Student,HND,3.21,I want to build an online shop where people can buy thrift clothes
+F/ND/24/3210199,Example ND Student,ND,2.95,a website where students can buy and sell used textbooks

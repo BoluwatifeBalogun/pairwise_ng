@@ -1,10 +1,10 @@
 {% extends "core/_base.html" %}{% load ui %}
-{% block title %}{{ SITE_NAME }}: final year project supervisors, matched on meaning{% endblock %}
+{% block title %}{{ INSTITUTION_NAME }}: final year project supervisors, matched on meaning{% endblock %}
 {% block body %}
 <header class="pnav wrap"><div class="pnav-in">
   {% include "core/_brand.html" %}
   <nav class="pnav-links" aria-label="Main">
-    <a class="hide-s" href="#how">How it works</a><a class="hide-s" href="#worked">Worked example</a><a class="hide-s" href="#nigeria">Coverage</a>
+    <a class="hide-s" href="#how">How it works</a><a class="hide-s" href="#worked">Worked example</a><a class="hide-s" href="#departments">Departments</a>
     {% if user.is_authenticated %}<a class="btn btn-primary btn-sm" href="{% url 'home' %}">Open my portal</a>
     {% else %}<a href="{% url 'login' %}">Sign in</a><a class="btn btn-primary btn-sm" href="{% url 'register' %}">Create account</a>{% endif %}
   </nav>
@@ -14,7 +14,7 @@
 <section class="hero"><div class="wrap hero-grid">
   <div>
     <h1 aria-label="Matched on meaning. Placed on merit."><span class="w" style="--i:0">Matched</span> <span class="w" style="--i:1">on</span> <span class="w" style="--i:2">meaning.</span><br><span class="w" style="--i:4">Placed</span> <span class="w" style="--i:5">on</span> <span class="w" style="--i:6">merit.</span></h1>
-    <p class="hero-lead rise" style="--d:620ms">{{ SITE_NAME }} reads what each final year student wants to work on, compares it with every supervisor's specialisation and past projects using Sentence-BERT, then fills each supervisor's places in CGPA order. Built for departments in tertiary institutions across Nigeria.</p>
+    <p class="hero-lead rise" style="--d:620ms">The system reads what each final year student wants to work on, compares it with every supervisor's specialisation and past projects using Sentence-BERT, then fills each supervisor's places in CGPA order. ND and HND projects are allocated separately, for every department of {{ INSTITUTION_NAME }}.</p>
     <div class="hero-cta rise" style="--d:760ms">
       <a class="btn btn-primary btn-lg" href="{% url 'register' %}">Create an account {% icon "arrow-right" %}</a>
       <a class="btn btn-ghost btn-lg" href="#how">See how it works</a>
@@ -25,6 +25,7 @@
       <span>{% icon "check" %} Unusual cases go to a person</span>
     </div>
   </div>
+  {% if demo_dept %}
   <form class="matcher rise" id="matcher" style="--d:400ms" data-url="{% url 'api_match' %}" aria-label="Live matching demonstration">
     {% csrf_token %}
     <div class="matcher-top"><h3><label for="demo-text">Describe a project interest in your own words</label></h3><span class="live"><i></i>SBERT live</span></div>
@@ -36,17 +37,24 @@
     </div>
     <button class="btn btn-primary" type="submit">{% icon "sparkles" %} Rank supervisors</button>
     <div class="results" aria-live="polite"></div>
-    <p class="matcher-foot">{% if demo_dept %}Ranked against the fictional demonstration records of {{ demo_dept.name }}, {{ demo_dept.institution.name }}. Scores are cosine similarity from {{ version.name|default:"the active model" }}.{% else %}Load the demonstration data with <code>python manage.py seed_demo</code>.{% endif %}</p>
+    <p class="matcher-foot">Ranked against the {% if has_demo %}fictional demonstration {% else %}supervisor {% endif %}records of the Department of {{ demo_dept.name }}. Scores are cosine similarity from {{ version.name|default:"the active model" }}.</p>
   </form>
+  {% else %}
+  <div class="matcher rise" style="--d:400ms">
+    <div class="matcher-top"><h3>Live matching</h3><span class="badge">Waiting for records</span></div>
+    <p class="muted" style="margin:6px 0 14px">Once a department has added its supervisors, you can type a project interest here and watch Sentence-BERT rank them.</p>
+    <div class="res top" style="opacity:1;transform:none;animation:none"><div class="res-row"><span class="res-name">How a result reads</span><span class="res-score">0.47</span></div><div class="res-spec">Supervisor name, specialisation, and a fit score from 0 to 1</div><div class="fit-track"><div class="fit-fill" style="--w:47%"></div></div></div>
+  </div>
+  {% endif %}
 </div></section>
 
 <section class="section" id="how"><div class="wrap">
   <div class="section-head reveal"><h2>How an allocation runs, start to finish</h2><p>Nobody ranks anybody. Students write one honest sentence, supervisors declare what they do and how many students they can take, and the system does the comparing.</p></div>
   <ol class="flow reveal">
-    <li><h3>Everyone submits once</h3><p>Students give matric number, CGPA and an interest statement. Supervisors give a specialisation and a capacity.</p></li>
+    <li><h3>Everyone submits once</h3><p>Students give matric number, programme (ND or HND), CGPA and an interest statement. Supervisors give a specialisation and a capacity for each programme.</p></li>
     <li><h3>SBERT reads every text</h3><p>Each statement and past project title becomes a 384-number embedding. A supervisor's profile is the average of theirs.</p></li>
     <li><h3>Every pair gets a fit score</h3><p>Cosine similarity measures meaning, so &ldquo;online store&rdquo; still finds the supervisor of &ldquo;e-commerce platforms&rdquo;.</p></li>
-    <li><h3>Places go in CGPA order</h3><p>Highest CGPA first. Each student takes the best-fitting supervisor who still has a vacancy.</p></li>
+    <li><h3>Places go in CGPA order</h3><p>ND and HND run separately. Highest CGPA first; each student takes the best-fitting supervisor who still has a vacancy.</p></li>
     <li><h3>A person signs off</h3><p>Weak matches and unplaced students are flagged. The coordinator resolves them, then publishes.</p></li>
   </ol>
 </div></section>
@@ -80,8 +88,8 @@
     <article class="spot"><div class="tile">{% icon "graduation-cap" 22 %}</div><h3>Students</h3><p>Say what you want to build. No category tick-boxes, no ranking lecturers.</p>
       <ul><li>{% icon "check" 16 %}Matric number, CGPA and interest, checked as you save</li><li>{% icon "check" 16 %}See your supervisor once results are published</li><li>{% icon "check" 16 %}See which of their past projects sit closest to your idea</li></ul></article>
     <article class="spot"><div class="tile">{% icon "book-open" 22 %}</div><h3>Supervisors</h3><p>Your profile is what you have actually supervised, not only a label.</p>
-      <ul><li>{% icon "check" 16 %}Set a specialisation statement and a capacity</li><li>{% icon "check" 16 %}Add past project titles to sharpen your profile</li><li>{% icon "check" 16 %}Receive your student list with matric numbers</li></ul></article>
-    <article class="spot"><div class="tile">{% icon "layout-dashboard" 22 %}</div><h3>Coordinators</h3><p>Run a whole department's allocation in under a second, then stay in control.</p>
+      <ul><li>{% icon "check" 16 %}Set a specialisation and how many ND and HND students you take</li><li>{% icon "check" 16 %}Add past project titles to sharpen your profile</li><li>{% icon "check" 16 %}Receive your student list with matric numbers</li></ul></article>
+    <article class="spot"><div class="tile">{% icon "layout-dashboard" 22 %}</div><h3>Coordinators</h3><p>Run the ND and the HND allocation separately, each in under a second, then stay in control.</p>
       <ul><li>{% icon "check" 16 %}Manage records and upload past projects by CSV</li><li>{% icon "check" 16 %}Set the fit threshold, run, and review flagged cases</li><li>{% icon "check" 16 %}Publish, print and export the final list</li></ul></article>
   </div>
 </div></section>
@@ -93,7 +101,7 @@
       <div class="metric"><b class="num">{{ version.top1|percent }}</b><span>Top-1 accuracy</span></div>
       <div class="metric"><b class="num">{{ version.top3|percent }}</b><span>Top-3 accuracy</span></div>
       <div class="metric"><b class="num">{{ version.mrr|floatformat:3 }}</b><span>Mean reciprocal rank</span></div>
-    </div><p class="muted" style="margin-top:14px;font-size:14px;max-width:44ch">{{ version.name }}, measured on {{ version.n_eval }} held-out demonstration records. Real departmental records will give different numbers.</p>{% endif %}
+    </div><p class="muted" style="margin-top:14px;font-size:14px;max-width:44ch">{{ version.name }}, measured on {{ version.n_eval }} held-out {% if has_demo %}demonstration records. Real departmental records will give different numbers.{% else %}past project records.{% endif %}</p>{% endif %}
   </div>
   <div class="promises reveal">
     <div class="promise">{% icon "shield-check" 22 %}<div><h3>No supervisor goes over capacity</h3><p>A place is given only while the vacancy counter is above zero, and the database refuses a capacity below one.</p></div></div>
@@ -103,19 +111,19 @@
   </div>
 </div></section>
 
-<section class="section" id="nigeria"><div class="wrap">
-  <div class="section-head reveal"><h2>One system for departments across Nigeria</h2><p>Nothing in the design is specific to one discipline or one school. Each department brings its own supervisors, past projects, matric format and CGPA scale, whether 4.00 or 5.00.</p></div>
+<section class="section" id="departments"><div class="wrap">
+  <div class="section-head reveal"><h2>Every department, both programmes</h2><p>Nothing in the design is specific to one discipline. Each department of {{ INSTITUTION_NAME }} brings its own supervisors and past projects, and allocates its ND and HND final year students in separate runs.</p></div>
   <div class="zones reveal">
-    {% for z in zones %}<div class="zone"><h3>{{ z }}</h3>{% for i in institutions %}{% if i.zone == z %}<p>{{ i.name }}<small>{{ i.kind }}, {{ i.state }} State, {{ i.cgpa_scale|floatformat:2 }} scale</small></p>{% endif %}{% endfor %}</div>{% endfor %}
+    {% for d in departments %}<div class="zone"><h3>Department of</h3><p>{{ d.name }}<small>{% if d.n_sup %}{{ d.n_sup }} supervisor{{ d.n_sup|pluralize }}, {{ d.n_stu }} student{{ d.n_stu|pluralize }} registered{% else %}Ready for registrations{% endif %}</small></p></div>{% endfor %}
   </div>
-  <p class="muted reveal" style="margin-top:18px;font-size:14.5px">Demonstration set-up: {{ stats.institutions }} institutions, {{ stats.departments }} departments, {{ stats.supervisors }} supervisors and {{ stats.projects }} past project records. All people and records shown are fictional.</p>
+  <p class="muted reveal" style="margin-top:18px;font-size:14.5px">{% if has_demo %}Demonstration set-up: {{ stats.departments }} departments, {{ stats.supervisors }} supervisors, {{ stats.students }} students and {{ stats.projects }} past project records. All people and records shown are fictional.{% else %}{{ stats.departments }} departments are set up. New departments are added by the platform administrator.{% endif %}</p>
 </div></section>
 
 <section class="section" style="padding-top:0"><div class="wrap"><div class="cta reveal">
   <h2>Run this session's allocation in an afternoon, not a fortnight</h2>
-  <p>Sign in with a demonstration account to walk through a full cycle, or register as a student or supervisor.</p>
-  <div class="row"><a class="btn btn-primary btn-lg" href="{% url 'login' %}">Sign in to the demonstration</a><a class="btn btn-ghost btn-lg" href="{% url 'register' %}">Create an account</a></div>
+  <p>{% if DEMO_MODE %}Sign in with a demonstration account to walk through a full cycle, or register as a student or supervisor.{% else %}Students and supervisors register in a minute. Coordinators receive their account from the platform administrator.{% endif %}</p>
+  <div class="row"><a class="btn btn-primary btn-lg" href="{% url 'login' %}">{% if DEMO_MODE %}Sign in to the demonstration{% else %}Sign in{% endif %}</a><a class="btn btn-ghost btn-lg" href="{% url 'register' %}">Create an account</a></div>
 </div></div></section>
 </main>
-<footer class="wrap foot"><span>{{ SITE_NAME }}. Student-to-supervisor allocation using Sentence-BERT semantic matching.</span><span>HND seminar project, Department of Computer Science, Yaba College of Technology.</span></footer>
+<footer class="wrap foot"><span>{{ INSTITUTION_NAME }}. Student-to-supervisor allocation using Sentence-BERT semantic matching.</span><span>HND seminar project, Department of Computer Science.</span></footer>
 {% endblock %}

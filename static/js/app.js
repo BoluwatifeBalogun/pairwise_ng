@@ -70,12 +70,17 @@
   /* register: matric field only for students, example follows department */
   var reg = $("#register-form");
   if (reg) {
-    var matric = $("#field-matric_no"), dep = $("#id_department"), ex = JSON.parse(reg.dataset.examples || "{}");
+    var block = $("#student-only"), matric = $("#field-matric_no"), dep = $("#id_department"), ex = JSON.parse(reg.dataset.examples || "{}");
     var sync = function () {
       var role = (reg.querySelector('input[name="role"]:checked') || {}).value;
-      matric.hidden = role !== "student";
+      block.hidden = role !== "student";
+      $("#id_matric_no").required = role === "student";
       var h = $(".help", matric); if (h && dep.value && ex[dep.value]) h.textContent = "Format: " + ex[dep.value];
+      var m = ($("#id_matric_no").value || "").toUpperCase();
+      var lv = /(^|\/)HD(\/|$)/.test(m) ? "HND" : (/(^|\/)ND(\/|$)/.test(m) ? "ND" : null);
+      if (lv) { var r = $("#level-" + lv); if (r) r.checked = true; }
     };
+    $("#id_matric_no").addEventListener("input", sync);
     reg.addEventListener("change", sync); sync();
   }
   /* login: fill a demonstration account */

@@ -1,12 +1,12 @@
 services:
   - type: web
-    name: pairwise-ng
+    name: yabatech-supervisor-allocation
     runtime: python
     plan: free
     buildCommand: bash build.sh
-    # migrate + seed on every start. With DATABASE_URL set, data is kept and the seed step
-    # does nothing once the demo data exists. Without it, SQLite is wiped on each restart.
-    startCommand: python manage.py migrate --noinput && python manage.py seed_demo && gunicorn pairwise.wsgi --workers 1 --threads 2 --timeout 120
+    # migrate + setup_site on every start. setup_site follows DEMO_MODE and creates the
+    # administrator from ADMIN_EMAIL / ADMIN_PASSWORD. Without DATABASE_URL, SQLite is wiped on each restart.
+    startCommand: python manage.py migrate --noinput && python manage.py setup_site && gunicorn yctalloc.wsgi --workers 1 --threads 2 --timeout 120
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.3
@@ -20,4 +20,12 @@ services:
       # Blueprint is created. Paste the connection string from Neon (postgresql://...)
       # or a MySQL one from filess.io (mysql://USER:PASSWORD@HOST:PORT/DBNAME).
       - key: DATABASE_URL
+        sync: false
+      # "0" removes the fictional demonstration people, records and sign-in shortcuts.
+      - key: DEMO_MODE
+        value: "0"
+      # Platform administrator (signs in at /admin/). Set both in the Render dashboard.
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
         sync: false

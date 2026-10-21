@@ -1,13 +1,13 @@
 {% extends "core/_shell.html" %}{% load ui %}
 {% block title %}Publish and reports, {{ SITE_NAME }}{% endblock %}
 {% block content %}
-<div class="page-head"><div><h1>Publish and reports</h1><p>{% if dept.published %}Published {{ dept.published_at|date:"j F Y, H:i" }}. Students and supervisors can see their results.{% else %}Publishing shows each student their supervisor and each supervisor their students.{% endif %}</p></div>
-  <div class="page-actions">{% if dept.last_run_at %}<a class="btn btn-ghost" href="{% url 'c_report_csv' %}">{% icon "file-down" %} Export CSV</a><button class="btn btn-ghost" type="button" onclick="window.print()">{% icon "printer" %} Print</button>{% endif %}
-    <form class="inline" method="post">{% csrf_token %}{% if dept.published %}<button class="btn btn-danger" type="submit" name="unpublish" value="1" data-confirm="Unpublish? Students and supervisors will stop seeing results until you publish again.">Unpublish</button>{% else %}<button class="btn btn-primary" type="submit" name="publish" value="1"{% if not dept.last_run_at or counts.open_flags %} disabled{% endif %}>{% icon "send" %} Publish allocation</button>{% endif %}</form></div></div>
-<div class="print-only"><h2 style="font-size:22px">{{ dept.institution.name }}, {{ dept.name }}</h2><p>Final year project supervisor allocation, {{ dept.session }} session</p></div>
+<div class="page-head"><div><h1>Publish the {{ level }} allocation</h1><p>{% if cycle.published %}Published {{ cycle.published_at|date:"j F Y, H:i" }}. {{ level }} students and their supervisors can see the results.{% else %}Publishing shows each {{ level }} student their supervisor and each supervisor their {{ level }} students. The {{ other_level }} allocation is published separately.{% endif %}</p></div>
+  <div class="page-actions">{% if cycle.last_run_at %}<a class="btn btn-ghost" href="{% url 'c_report_csv' %}">{% icon "file-down" %} Export CSV</a><button class="btn btn-ghost" type="button" onclick="window.print()">{% icon "printer" %} Print</button>{% endif %}
+    <form class="inline" method="post">{% csrf_token %}{% if cycle.published %}<button class="btn btn-danger" type="submit" name="unpublish" value="1" data-confirm="Unpublish the {{ level }} allocation? Students and supervisors will stop seeing it until you publish again.">Unpublish</button>{% else %}<button class="btn btn-primary" type="submit" name="publish" value="1"{% if not cycle.last_run_at or counts.open_flags %} disabled{% endif %}>{% icon "send" %} Publish {{ level }} allocation</button>{% endif %}</form></div></div>
+<div class="print-only"><h2 style="font-size:22px">{{ INSTITUTION_NAME }}, Department of {{ dept.name }}</h2><p>{{ level_name }} final year project supervisor allocation, {{ dept.session }} session</p></div>
 <div class="stack">
 {% if counts.open_flags %}<div class="note warn no-print">{% icon "flag" %}<span>{{ counts.open_flags }} flagged cases are still open. <a href="{% url 'c_flagged' %}">Resolve them</a> before publishing.</span></div>{% endif %}
-{% if not dept.last_run_at %}<div class="card"><div class="empty"><h3>Nothing to publish yet</h3><p>Run the allocation first.</p><a class="btn btn-primary" href="{% url 'c_run' %}">Go to run allocation</a></div></div>{% else %}
+{% if not cycle.last_run_at %}<div class="card"><div class="empty"><h3>Nothing to publish yet</h3><p>Run the {{ level }} allocation first.</p><a class="btn btn-primary" href="{% url 'c_run' %}">Go to run allocation</a></div></div>{% else %}
 <div class="grid g2 no-print" style="align-items:start">
   <div class="card card-pad"><h3>Checks on this result</h3><div style="margin-top:6px">
     <div class="check{% if not checks.capacity %} fail{% endif %}">{% if checks.capacity %}{% icon "circle-check" 20 %}{% else %}{% icon "triangle-alert" 20 %}{% endif %}<div><b>No supervisor exceeds capacity</b><span>Every supervisor's student count is within the declared maximum.</span></div></div>
@@ -17,10 +17,10 @@
     <dl class="kv" style="margin:12px 0 16px"><dt>Mean fit</dt><dd class="num">{{ summary.mean|score }}</dd><dt>Lowest fit</dt><dd class="num">{{ summary.min|score }}</dd><dt>Got first choice</dt><dd class="num">{{ summary.first_choice }} of {{ counts.placed }}</dd><dt>Flagged</dt><dd class="num">{{ counts.flags }}</dd></dl>
     {% for d in dist %}<div class="loadrow" style="grid-template-columns:120px minmax(0,1fr) 36px"><span style="font-size:14.5px">{{ d.label }}</span><div class="fit-track"><div class="fit-fill" style="--w:{{ d.pct }}%"></div></div><span class="num muted" style="text-align:right">{{ d.n }}</span></div>{% endfor %}</div>
 </div>
-{% for g in groups %}<div class="card card-pad"><div class="card-head"><div><h3>{{ g.sup.full_name }}</h3><span class="muted" style="font-size:14.5px">{{ g.sup.specialisation_text }}</span></div><span class="badge{% if g.rows|length == g.sup.capacity %} ok{% endif %}">{{ g.rows|length }} of {{ g.sup.capacity }}</span></div>
+{% for g in groups %}<div class="card card-pad"><div class="card-head"><div><h3>{{ g.sup.full_name }}</h3><span class="muted" style="font-size:14.5px">{{ g.sup.specialisation_text }}</span></div><span class="badge{% if g.rows|length == g.capacity %} ok{% endif %}">{{ g.rows|length }} of {{ g.capacity }} {{ level }}</span></div>
   {% if g.rows %}<div class="table-wrap"><table class="tbl"><thead><tr><th>Matric number</th><th>Name</th><th class="r">CGPA</th><th>Project interest</th><th class="r">Fit</th></tr></thead><tbody>
   {% for a in g.rows %}<tr><td class="num">{{ a.student.matric_no }}</td><td>{{ a.student.full_name }}</td><td class="r num">{{ a.student.cgpa }}</td><td>{{ a.student.interest_text }}</td><td class="r num">{{ a.fit_score|score }}{% if a.manual %} <span class="badge">manual</span>{% endif %}</td></tr>{% endfor %}
-  </tbody></table></div>{% else %}<p class="muted">No students allocated.</p>{% endif %}</div>{% endfor %}
+  </tbody></table></div>{% else %}<p class="muted">No {{ level }} students allocated.</p>{% endif %}</div>{% endfor %}
 {% endif %}
 </div>
 {% endblock %}

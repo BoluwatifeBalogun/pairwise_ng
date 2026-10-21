@@ -3,7 +3,8 @@
 <div class="shell">
   <aside class="side">
     {% include "core/_brand.html" %}
-    <div class="side-dept"><b>{{ dept.name }}</b>{{ dept.institution.name }}<br>{{ dept.session }} session</div>
+    <div class="side-dept"><b>{{ dept.name }}</b>{{ dept.session }} session</div>
+    <div class="levelswitch" role="group" aria-label="Programme level">{% for value, label in levels reversed %}<a href="?level={{ value }}"{% if value == level %} aria-current="true"{% endif %} title="{{ label }}">{{ value }}</a>{% endfor %}</div>
     <nav aria-label="Coordinator">
       <a href="{% url 'c_overview' %}"{% if nav == "overview" %} aria-current="page"{% endif %}>{% icon "layout-dashboard" %}Overview</a>
       <a href="{% url 'c_students' %}"{% if nav == "students" %} aria-current="page"{% endif %}>{% icon "graduation-cap" %}Students</a>

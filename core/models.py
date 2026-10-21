@@ -1,11 +1,13 @@
-"""Database tables (report Table 4.2), plus institutions and departments so the
-system can serve any department in any Nigerian tertiary institution."""
+"""Database tables (report Table 4.2), plus institutions, departments and per-level
+allocation cycles, so every department can allocate its ND and HND students separately."""
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q
 
 ZONES = ["North Central", "North East", "North West", "South East", "South South", "South West"]
+ND, HND = "ND", "HND"
+LEVELS = [(ND, "National Diploma (ND)"), (HND, "Higher National Diploma (HND)")]
+LEVEL_NAMES = dict(LEVELS)
 
 
 class User(AbstractUser):
@@ -47,11 +49,6 @@ class Department(models.Model):
     matric_pattern = models.CharField(max_length=120, blank=True,
                                       help_text="Regular expression for this department's matric format")
     matric_example = models.CharField(max_length=40, blank=True)
-    threshold = models.FloatField(default=0.30)
-    last_run_at = models.DateTimeField(null=True, blank=True)
-    last_run_version = models.ForeignKey("ModelVersion", null=True, blank=True, on_delete=models.SET_NULL)
-    published = models.BooleanField(default=False)
-    published_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         unique_together = [("institution", "name")]
@@ -64,6 +61,38 @@ class Department(models.Model):
     def cgpa_scale(self):
         return self.institution.cgpa_scale
 
+    def cycle(self, level):
+        """The allocation cycle of one level in this department (created on first use)."""
+        c, _ = Cycle.objects.get_or_create(department=self, level=level)
+        return c
+
+    @property
+    def any_published(self):
+        return self.cycles.filter(published=True).exists()
+
+
+class Cycle(models.Model):
+    """One allocation per level per department: ND projects and HND projects are
+    allocated, reviewed and published separately."""
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name="cycles")
+    level = models.CharField(max_length=3, choices=LEVELS)
+    threshold = models.FloatField(default=0.30)
+    last_run_at = models.DateTimeField(null=True, blank=True)
+    last_run_version = models.ForeignKey("ModelVersion", null=True, blank=True, on_delete=models.SET_NULL)
+    published = models.BooleanField(default=False)
+    published_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = [("department", "level")]
+        ordering = ["department", "-level"]
+
+    def __str__(self):
+        return f"{self.level} allocation, {self.department}"
+
+    @property
+    def level_name(self):
+        return LEVEL_NAMES[self.level]
+
 
 class Student(models.Model):
     """students table: matric number is the primary key, so no student appears twice."""
@@ -71,6 +100,7 @@ class Student(models.Model):
     user = models.OneToOneField(User, null=True, blank=True, on_delete=models.SET_NULL)
     department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name="students")
     full_name = models.CharField(max_length=120)
+    level = models.CharField(max_length=3, choices=LEVELS, default=HND)
     cgpa = models.DecimalField(max_digits=3, decimal_places=2)
     interest_text = models.TextField(blank=True)
 
@@ -88,25 +118,36 @@ class Student(models.Model):
 
 
 class Supervisor(models.Model):
-    """supervisors table: specialisation statement and maximum number of students."""
+    """supervisors table: specialisation statement and maximum number of students per level."""
     supervisor_id = models.BigAutoField(primary_key=True)
     user = models.OneToOneField(User, null=True, blank=True, on_delete=models.SET_NULL)
     department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name="supervisors")
     full_name = models.CharField(max_length=120)
     specialisation_text = models.TextField(blank=True)
-    capacity = models.PositiveIntegerField(default=5, validators=[MinValueValidator(1)])
+    capacity = models.PositiveIntegerField(default=5, help_text="Maximum number of HND students")
+    capacity_nd = models.PositiveIntegerField(default=3, help_text="Maximum number of ND students")
     approved = models.BooleanField(default=True, help_text="Confirmed by the coordinator")
 
     class Meta:
         ordering = ["full_name"]
-        constraints = [models.CheckConstraint(condition=Q(capacity__gte=1), name="capacity_at_least_one")]
+        constraints = [models.CheckConstraint(condition=Q(capacity__gte=1) | Q(capacity_nd__gte=1),
+                                              name="capacity_at_least_one")]
 
     def __str__(self):
         return self.full_name
 
+    def capacity_for(self, level):
+        return self.capacity_nd if level == ND else self.capacity
+
     @property
     def ready(self):
         return self.approved and bool(self.specialisation_text.strip())
+
+    def takes(self, level):
+        return self.ready and self.capacity_for(level) >= 1
+
+    def load(self, level):
+        return self.allocations.filter(student__level=level).count()
 
 
 class PastProject(models.Model):
