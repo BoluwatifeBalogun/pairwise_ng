@@ -7,7 +7,7 @@
   {% include "core/_field.html" with f=form.username %}
   {% include "core/_field.html" with f=form.password %}
   <input type="hidden" name="next" value="{{ next }}">
-  <div class="form-actions"><button class="btn btn-primary btn-lg" type="submit" data-busy="Signing in">{% icon "lock" %} Sign in</button><a href="{% url 'register' %}">Create an account</a></div>
+  <div class="form-actions"><button class="btn btn-primary btn-lg" type="submit" data-busy="Signing in">{% icon "lock" %} Sign in</button><a href="{% url 'register' %}">Student sign-up</a></div>
 </form>
 {% if DEMO_MODE %}<div class="demo-accts"><h3>Demonstration accounts</h3><span class="muted">Choose one to fill the form. The password is demo12345.</span>
   <button type="button" data-fill="coordinator@yabatech.demo"><span>Coordinator, Computer Science</span><code>HND and ND</code></button>

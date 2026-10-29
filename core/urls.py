@@ -16,7 +16,6 @@ urlpatterns = [
     path("supervisor", v.supervisor_home, name="supervisor_home"),
     path("supervisor/projects/<int:pk>/delete", v.project_delete, name="project_delete"),
     path("coordinator", v.c_overview, name="c_overview"),
-    path("coordinator/coordinators/<int:pk>", v.c_coordinator_decide, name="c_coordinator_decide"),
     path("coordinator/students", v.c_students, name="c_students"),
     path("coordinator/students/add", v.c_student_form, name="c_student_add"),
     path("coordinator/students/import", v.c_students_import, name="c_students_import"),

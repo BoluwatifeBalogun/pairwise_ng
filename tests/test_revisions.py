@@ -76,14 +76,28 @@ class Revisions(TestCase):
         self.client.post(reverse("c_supervisors_import"), {"file": csv_file})
         self.assertEqual(self.cs.supervisors.get(full_name="Mrs. Csv Person").capacity_nd, 3)  # default
 
-        # the imported supervisor signs up later and is linked to the same record
-        self.client.logout()
-        self.client.post(reverse("register"), {"role": "supervisor", "department": self.cs.pk,
-                                               "full_name": "Dr. New Lecturer", "email": "new.lect@example.com",
-                                               "password": "a-long-pass-1"})
+        # the administrator gives an imported supervisor a sign-in: linked to the same record
+        admin = User.objects.create_superuser(username="boss@example.com", email="boss@example.com",
+                                              password="boss-secret-99")
+        self.client.force_login(admin)
+        r = self.client.post("/admin/core/user/add/", {
+            "email": "new.lect@example.com", "first_name": "Dr. New", "last_name": "Lecturer",
+            "role": "supervisor", "department": self.cs.pk, "password1": "lect-secret-77",
+            "password2": "lect-secret-77", "usable_password": "true"})
+        self.assertEqual(r.status_code, 302)
         sup = self.cs.supervisors.get(full_name="Dr. New Lecturer")
         self.assertEqual(sup.user.email, "new.lect@example.com")
         self.assertEqual(self.cs.supervisors.filter(full_name="Dr. New Lecturer").count(), 1)
+        # and a brand-new supervisor added in the admin panel gets a record in their department
+        self.client.post("/admin/core/user/add/", {
+            "email": "brand.new@example.com", "first_name": "Mrs. Brand", "last_name": "New",
+            "role": "supervisor", "department": self.cs.pk, "password1": "lect-secret-77",
+            "password2": "lect-secret-77", "usable_password": "true"})
+        self.assertTrue(self.cs.supervisors.filter(full_name="Mrs. Brand New", user__email="brand.new@example.com").exists())
+        r = self.client.post("/admin/core/user/add/", {
+            "email": "nodept@example.com", "role": "supervisor", "department": "",
+            "password1": "lect-secret-77", "password2": "lect-secret-77", "usable_password": "true"})
+        self.assertContains(r, "Choose the supervisor")
 
     def test_past_projects_from_excel(self):
         f = xlsx("p.xlsx", ["supervisor_name", "title", "keywords", "abstract", "session"], [
@@ -128,47 +142,24 @@ class Revisions(TestCase):
                               .values_list("student_id", "supervisor_id")), ee_before)
         self.assertTrue(Department.objects.get(pk=self.ee.pk).cycle(HND).published)
 
-    def test_coordinator_signs_up_for_a_department(self):
+    def test_coordinators_are_created_only_by_the_administrator(self):
         self.client.logout()
         stats = Department.objects.get(name="Statistics")
-        r = self.client.post(reverse("register"), {"role": "coordinator", "department": stats.pk,
-                                                   "full_name": "Mrs. Stats Coordinator",
-                                                   "email": "stats@example.com", "password": "a-long-pass-1"},
-                             follow=True)
-        self.assertContains(r, "almost ready")
-        u = User.objects.get(email="stats@example.com")
-        self.assertEqual((u.role, u.department_id, u.approved), (User.COORDINATOR, stats.pk, False))
-        self.assertContains(self.client.get(reverse("c_students")), "almost ready")  # nothing usable yet
-        u.approved = True
-        u.save()
+        self.client.post(reverse("register"), {"role": "coordinator", "department": stats.pk,
+                                               "full_name": "Mrs. Stats Coordinator",
+                                               "email": "stats@example.com", "password": "a-long-pass-1"})
+        self.assertFalse(User.objects.filter(email="stats@example.com").exists())
+        admin = User.objects.create_superuser(username="boss@example.com", email="boss@example.com",
+                                              password="boss-secret-99")
+        self.client.force_login(admin)
+        r = self.client.post("/admin/core/user/add/", {
+            "email": "stats@example.com", "first_name": "Mrs. Stats", "last_name": "Coordinator",
+            "role": "coordinator", "department": stats.pk, "password1": "stats-secret-77",
+            "password2": "stats-secret-77", "usable_password": "true"})
+        self.assertEqual(r.status_code, 302)
+        self.client.logout()
+        self.assertTrue(self.client.login(username="stats@example.com", password="stats-secret-77"))
         r = self.client.get(reverse("c_overview"))
         self.assertContains(r, "Department of Statistics")
         self.assertContains(r, "No HND allocation yet")
         self.assertNotContains(self.client.get(reverse("c_students")), "F/HD/24/32100")  # sees only its own
-
-
-class CoordinatorApprovesPeers(TestCase):
-    def test_department_coordinator_approves_a_new_coordinator(self):
-        from django.core.management import call_command
-        from io import StringIO
-        call_command("setup_site", demo="on", no_eval=True, stdout=StringIO())
-        cs = Department.objects.get(name="Computer Science")
-        ee = Department.objects.get(name="Electrical and Electronic Engineering")
-        new = User.objects.create_user(username="n@example.com", email="n@example.com", password="a-long-pass-1",
-                                       role=User.COORDINATOR, department=cs, approved=False)
-        other = User.objects.create_user(username="o@example.com", email="o@example.com", password="a-long-pass-1",
-                                         role=User.COORDINATOR, department=ee, approved=False)
-        self.client.login(username="n@example.com", password="a-long-pass-1")
-        self.assertContains(self.client.get(reverse("c_overview")), "Waiting for approval")
-        self.client.login(username="coordinator@yabatech.demo", password="demo12345")
-        r = self.client.get(reverse("c_overview"))
-        self.assertContains(r, "n@example.com")
-        self.assertNotContains(r, "o@example.com")  # another department's request is not shown
-        self.assertEqual(self.client.post(reverse("c_coordinator_decide", args=[other.pk]), {"approve": 1}).status_code, 404)
-        self.client.post(reverse("c_coordinator_decide", args=[new.pk]), {"approve": 1})
-        new.refresh_from_db()
-        self.assertTrue(new.approved)
-        other.refresh_from_db()
-        self.assertFalse(other.approved)
-        self.client.login(username="n@example.com", password="a-long-pass-1")
-        self.assertContains(self.client.get(reverse("c_overview")), "Computer Science")

@@ -17,7 +17,7 @@ class User(AbstractUser):
     role = models.CharField(max_length=12, choices=ROLES, default=STUDENT)
     email = models.EmailField(unique=True)
     department = models.ForeignKey("Department", null=True, blank=True, on_delete=models.SET_NULL,
-                                   help_text="Department a coordinator administers")
+                                   help_text="The coordinator's or supervisor's department")
     approved = models.BooleanField(default=True, help_text="Coordinators who sign up themselves wait for the "
                                                            "platform administrator to approve them")
 

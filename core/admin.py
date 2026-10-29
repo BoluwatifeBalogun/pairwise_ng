@@ -23,6 +23,8 @@ class EmailUserCreationForm(UserCreationForm):
         data = super().clean()
         if data.get("role") == User.COORDINATOR and not data.get("department"):
             self.add_error("department", "Choose the department this coordinator will run.")
+        if data.get("role") == User.SUPERVISOR and not data.get("department"):
+            self.add_error("department", "Choose the supervisor's department.")
         return data
 
     def save(self, commit=True):
@@ -36,20 +38,14 @@ class EmailUserCreationForm(UserCreationForm):
 @admin.register(User)
 class UA(UserAdmin):
     add_form = EmailUserCreationForm
-    list_display = ("email", "first_name", "last_name", "role", "department", "approved", "is_superuser")
-    list_filter = ("role", "approved", "is_superuser", "department")
-    actions = ["approve_coordinators"]
-
-    @admin.action(description="Approve the selected coordinators")
-    def approve_coordinators(self, request, queryset):
-        n = queryset.filter(role=User.COORDINATOR).update(approved=True)
-        self.message_user(request, f"Approved {n} coordinator account(s).")
+    list_display = ("email", "first_name", "last_name", "role", "department", "is_superuser")
+    list_filter = ("role", "is_superuser", "department")
     search_fields = ("email", "first_name", "last_name")
     ordering = ("email",)
     fieldsets = (
         (None, {"fields": ("email", "password")}),
         ("Person", {"fields": ("first_name", "last_name")}),
-        ("Role", {"fields": ("role", "department", "approved")}),
+        ("Role", {"fields": ("role", "department")}),
         ("Access", {"fields": ("is_active", "is_staff", "is_superuser")}),
     )
     add_fieldsets = ((None, {"classes": ("wide",), "fields": (
@@ -58,7 +54,19 @@ class UA(UserAdmin):
     def save_model(self, request, obj, form, change):
         obj.email = (obj.email or "").strip().lower()
         obj.username = obj.email
+        obj.approved = True
         super().save_model(request, obj, form, change)
+        # A supervisor account added here gets its supervisor record straight away, so the
+        # department's coordinator sees it and only needs to fill in specialisation and capacity.
+        if obj.role == User.SUPERVISOR and obj.department_id and not Supervisor.objects.filter(user=obj).exists():
+            name = obj.get_full_name() or obj.email
+            sup = Supervisor.objects.filter(department_id=obj.department_id, user__isnull=True,
+                                            full_name__iexact=name).first()
+            if sup:
+                sup.user = obj
+                sup.save(update_fields=["user"])
+            else:
+                Supervisor.objects.create(user=obj, department_id=obj.department_id, full_name=name)
 
 
 @admin.register(Department)

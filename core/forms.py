@@ -21,14 +21,14 @@ class LoginForm(AuthenticationForm):
 
 
 class RegisterForm(forms.Form):
-    role = forms.ChoiceField(label="I am a", choices=[("student", "Student"),
-                                                      ("supervisor", "Supervisor"),
-                                                      ("coordinator", "Coordinator")])
+    """Self sign-up is for students only. Supervisors are added by their department's coordinator
+    or the administrator; coordinators are created by the administrator."""
     department = forms.ModelChoiceField(label="Department", empty_label="Choose your department",
                                         queryset=Department.objects.select_related("institution"))
     level = forms.ChoiceField(label="Programme", choices=LEVELS, initial=HND, required=False)
     full_name = forms.CharField(label="Full name", max_length=120)
-    matric_no = forms.CharField(label="Matric number", max_length=25, required=False,
+    matric_no = forms.CharField(label="Matric number", max_length=25,
+                                error_messages={"required": "Enter your matric number."},
                                 help_text="For example F/HD/24/3210001 or F/ND/24/3210001.")
     email = forms.EmailField(label="Email address")
     password = forms.CharField(label="Password", strip=False, min_length=8,
@@ -51,12 +51,11 @@ class RegisterForm(forms.Form):
 
     def clean(self):
         data = super().clean()
-        if data.get("role") == "student" and data.get("department"):
+        data["role"] = "student"
+        if data.get("department") and data.get("matric_no"):
             m = pp.normalise_matric(data.get("matric_no"))
             dept = data["department"]
-            if not m:
-                self.add_error("matric_no", "Enter your matric number.")
-            elif pp.matric_error(m, dept.matric_pattern or None):
+            if pp.matric_error(m, dept.matric_pattern or None):
                 self.add_error("matric_no", f"That does not look like a {dept.institution.short_name} "
                                f"matric number. Example: {dept.matric_example or 'ask your coordinator'}.")
             else:
@@ -71,9 +70,6 @@ class RegisterForm(forms.Form):
                     self.add_error("level", f"This matric number is an {from_matric} number. "
                                    f"Choose {from_matric}, or check the number.")
                 data["level"] = chosen
-        else:
-            data["matric_no"] = ""
-            data["level"] = ""
         return data
 
 
@@ -152,6 +148,35 @@ class SupervisorForm(forms.ModelForm):
             "capacity": "Enter 0 if you do not supervise HND projects.",
             "capacity_nd": "Enter 0 if you do not supervise ND projects."}
 
+    login_email = forms.EmailField(label="Sign-in email", required=False,
+                                   help_text="Optional. Give the supervisor a sign-in so they can see their students.")
+    login_password = forms.CharField(label="Password", required=False, strip=False,
+                                     widget=forms.PasswordInput(attrs={"autocomplete": "new-password"},
+                                                                render_value=False))
+
+    def __init__(self, *a, with_login=True, **kw):
+        super().__init__(*a, **kw)
+        self.fields["specialisation_text"].required = True
+        if not with_login:
+            del self.fields["login_email"], self.fields["login_password"]
+            return
+        user = self.instance.user if self.instance.pk else None
+        if user:
+            self.fields["login_email"].initial = user.email
+            self.fields["login_password"].help_text = "Leave blank to keep the current password."
+        else:
+            self.fields["login_password"].help_text = "At least 8 characters. Share it with the supervisor."
+
+    def clean_login_email(self):
+        email = (self.cleaned_data.get("login_email") or "").strip().lower()
+        if email:
+            other = User.objects.filter(email=email)
+            if self.instance.pk and self.instance.user_id:
+                other = other.exclude(pk=self.instance.user_id)
+            if other.exists():
+                raise forms.ValidationError("Another account already uses this email.")
+        return email
+
     def clean_specialisation_text(self):
         t = pp.clean_text(self.cleaned_data["specialisation_text"])
         if len(t) < 10:
@@ -180,7 +205,38 @@ class SupervisorForm(forms.ModelForm):
         data = super().clean()
         if not (data.get("capacity") or data.get("capacity_nd")):
             self.add_error("capacity", "At least one of the two capacities must be 1 or more.")
+        if "login_email" in self.fields:
+            email, pw = data.get("login_email"), data.get("login_password")
+            has_login = bool(self.instance.pk and self.instance.user_id)
+            if pw and not email:
+                self.add_error("login_email", "Enter the email the supervisor will sign in with.")
+            elif email and not has_login and not pw:
+                self.add_error("login_password", "Set a password for the new sign-in.")
+            if pw:
+                try:
+                    validate_password(pw)
+                except forms.ValidationError as e:
+                    self.add_error("login_password", e)
         return data
+
+    def save_login(self, sup):
+        """Create or update the supervisor's sign-in from the two optional fields."""
+        email = self.cleaned_data.get("login_email")
+        pw = self.cleaned_data.get("login_password")
+        if not email:
+            return None
+        user = sup.user
+        first, _, last = sup.full_name.partition(" ")
+        if user is None:
+            user = User(role=User.SUPERVISOR, first_name=first, last_name=last)
+        user.email = user.username = email
+        if pw:
+            user.set_password(pw)
+        user.save()
+        if sup.user_id != user.pk:
+            sup.user = user
+            sup.save(update_fields=["user"])
+        return user
 
 
 class ProjectForm(forms.ModelForm):

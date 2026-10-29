@@ -49,9 +49,10 @@ class DemoOff(TestCase):
             "role": "student", "department": cs.pk, "full_name": claimed.full_name, "level": HND,
             "matric_no": claimed.pk, "email": "claimed@example.com", "password": "a-long-pass-1"})
         self.client.logout()
-        self.client.post(reverse("register"), {
-            "role": "supervisor", "department": cs.pk, "full_name": "Dr. Real Lecturer",
-            "email": "lecturer@example.com", "password": "a-long-pass-1"})
+        self.client.login(username="coordinator@yabatech.demo", password=demo.PASSWORD)
+        self.client.post(reverse("c_supervisor_add"), {
+            "full_name": "Dr. Real Lecturer", "specialisation_text": "Software engineering and testing",
+            "capacity": 2, "capacity_nd": 1, "login_email": "lecturer@example.com", "login_password": "a-long-pass-1"})
         self.client.logout()
         User.objects.create_user(username="coord@example.com", email="coord@example.com",
                                  password="a-long-pass-1", role=User.COORDINATOR, department=cs)

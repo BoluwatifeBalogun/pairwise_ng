@@ -192,25 +192,50 @@ class FullCycle(TestCase):
         self.assertContains(r, "Loaded 1 past project records")
         self.assertEqual(sup.past_projects.count(), before + 1)
 
-    def test_supervisor_self_registration_needs_confirmation(self):
-        r = self.client.get(reverse("register") + "?role=supervisor")
-        self.assertContains(r, 'id="student-only" hidden')  # no matric number asked of supervisors
-        r = self.client.post(reverse("register"), {"role": "supervisor", "department": self.cs.pk,
-                                                   "full_name": "Dr. New Staff", "email": "new@example.com",
-                                                   "password": "a-long-pass-1"}, follow=True)
-        self.assertRedirects(r, reverse("supervisor_home"))
-        sup = Supervisor.objects.get(user__email="new@example.com")
-        self.assertFalse(sup.ready)
-        r = self.client.post(reverse("supervisor_home"), {"p-full_name": "Dr. New Staff", "save_profile": 1,
-                                                          "p-specialisation_text": "Game development and graphics",
-                                                          "p-capacity": 0, "p-capacity_nd": 0})
-        self.assertContains(r, "At least one of the two capacities")
-        self.client.post(reverse("supervisor_home"), {"p-full_name": "Dr. New Staff", "save_profile": 1,
-                                                      "p-specialisation_text": "Game development and graphics",
-                                                      "p-capacity": 3, "p-capacity_nd": 0})
-        sup.refresh_from_db()
-        self.assertTrue(sup.capacity == 3 and sup.capacity_nd == 0)
+    def test_only_students_can_sign_up(self):
+        r = self.client.get(reverse("register"))
+        self.assertContains(r, "Create a student account")
+        self.assertNotContains(r, 'name="role"')  # no Supervisor or Coordinator choice
+        for role in ("supervisor", "coordinator"):
+            r = self.client.post(reverse("register"), {
+                "role": role, "department": self.cs.pk, "full_name": "Dr. Sneaky", "email": f"{role}@example.com",
+                "password": "a-long-pass-1"})
+            self.assertContains(r, "Enter your matric number")  # a student form, nothing else
+            self.assertFalse(User.objects.filter(email=f"{role}@example.com").exists())
+        r = self.client.post(reverse("register"), {
+            "role": "coordinator", "department": self.cs.pk, "full_name": "Still A Student",
+            "matric_no": "F/HD/24/3219990", "email": "tamper@example.com", "password": "a-long-pass-1"})
+        self.assertEqual(User.objects.get(email="tamper@example.com").role, User.STUDENT)
+
+    def test_coordinator_adds_supervisor_with_sign_in(self):
         self.login("coordinator@yabatech.demo")
-        self.client.post(reverse("c_supervisor_approve", args=[sup.pk]))
-        sup.refresh_from_db()
+        form = {"full_name": "Dr. New Staff", "specialisation_text": "Game development and graphics",
+                "capacity": 3, "capacity_nd": 0}
+        # a sign-in needs both an email and a password the first time
+        r = self.client.post(reverse("c_supervisor_add"), {**form, "login_email": "new.staff@example.com"})
+        self.assertContains(r, "Set a password for the new sign-in")
+        r = self.client.post(reverse("c_supervisor_add"), {**form, "login_email": "coordinator@yabatech.demo",
+                                                           "login_password": "a-long-pass-1"})
+        self.assertContains(r, "Another account already uses this email")
+        r = self.client.post(reverse("c_supervisor_add"), {**form, "login_email": "New.Staff@Example.com",
+                                                           "login_password": "a-long-pass-1"}, follow=True)
+        self.assertContains(r, "They can sign in with new.staff@example.com")
+        sup = self.cs.supervisors.get(full_name="Dr. New Staff")
         self.assertTrue(sup.ready)
+        self.assertEqual((sup.user.email, sup.user.role), ("new.staff@example.com", User.SUPERVISOR))
+        # a supervisor without a sign-in can be given one later; editing keeps the password if left blank
+        plain = self.cs.supervisors.filter(user__isnull=True).first()
+        self.assertContains(self.client.get(reverse("c_supervisors")), "Give this supervisor a sign-in")
+        self.client.post(reverse("c_supervisor_edit", args=[plain.pk]), {
+            "full_name": plain.full_name, "specialisation_text": plain.specialisation_text,
+            "capacity": plain.capacity, "capacity_nd": plain.capacity_nd,
+            "login_email": "plain@example.com", "login_password": "first-pass-123"})
+        self.client.post(reverse("c_supervisor_edit", args=[plain.pk]), {
+            "full_name": plain.full_name, "specialisation_text": plain.specialisation_text,
+            "capacity": plain.capacity, "capacity_nd": plain.capacity_nd, "login_email": "plain@example.com"})
+        self.client.logout()
+        self.assertTrue(self.client.login(username="plain@example.com", password="first-pass-123"))
+        r = self.client.get(reverse("supervisor_home"))
+        self.assertContains(r, plain.full_name)
+        self.assertNotContains(r, "Sign-in email")  # supervisors cannot change sign-ins themselves
+        self.assertTrue(self.client.login(username="new.staff@example.com", password="a-long-pass-1"))

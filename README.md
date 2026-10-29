@@ -45,15 +45,18 @@ Excel and CSV imports, Excel downloads and per-department coordinators.
 
 - Departments: `/admin/`. Each department has its own coordinator dashboard and its own
   allocation; running one department never changes another department's records.
-- Coordinators: sign up on Create account (choose Coordinator and the department). An existing
-  coordinator of that department approves them from the Overview page, or the administrator
-  approves them in `/admin/`. A department can have several coordinators. The administrator can
-  also create coordinator accounts directly in `/admin/` (set role = Coordinator and the department).
+- Who can create accounts:
+  - Students sign up themselves (Student sign-up page).
+  - Supervisors cannot sign up. The department's coordinator adds them on the Supervisors page,
+    with an optional sign-in email and password, or the administrator adds them in `/admin/`
+    (Users > Add user, role Supervisor, pick the department; the supervisor record is created).
+  - Coordinators cannot sign up. Only the administrator creates them in `/admin/` (role
+    Coordinator, pick the department). A department can have several coordinators.
 - Students: Students page (on the level you are working on), Add, or Import from Excel (.xlsx)
   or CSV. Columns: matric_no, full_name, cgpa, interest_text, optional level (ND or HND).
 - Supervisors: Supervisors page, Add, or Import from Excel or CSV. Columns: full_name,
-  specialisation, hnd_capacity, nd_capacity. Names already listed are updated. A supervisor who
-  later signs up with the same name is linked to the imported record.
+  specialisation, hnd_capacity, nd_capacity. Names already listed are updated. Imports carry no
+  passwords: give an imported supervisor a sign-in with the Edit button.
 - Templates for every import download from the import panels, as Excel or CSV.
 - Imports only add or update. They never delete a student, supervisor or past project.
 - Downloads: the Students, Supervisors and Publish pages each have a Download/Export Excel button.

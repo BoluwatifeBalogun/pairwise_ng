@@ -83,41 +83,23 @@ def api_match(request):
 def register(request):
     if request.user.is_authenticated:
         return redirect("home")
-    form = RegisterForm(request.POST or None, initial={"role": request.GET.get("role", "student")})
+    form = RegisterForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         d = form.cleaned_data
         with transaction.atomic():
             first, _, last = d["full_name"].strip().partition(" ")
             user = User.objects.create_user(username=d["email"], email=d["email"], password=d["password"],
-                                            role=d["role"], first_name=first, last_name=last)
-            if d["role"] == "student":
-                st = Student.objects.filter(pk=d["matric_no"]).first()
-                if st:
-                    st.user = user
-                    st.level = d["level"]
-                    st.save()
-                else:
-                    Student.objects.create(matric_no=d["matric_no"], user=user, department=d["department"],
-                                           full_name=d["full_name"].strip(), cgpa=0, level=d["level"])
-            elif d["role"] == "supervisor":
-                # a coordinator may already have imported this supervisor: link to that record
-                sup = Supervisor.objects.filter(department=d["department"], user__isnull=True,
-                                                full_name__iexact=d["full_name"].strip()).first()
-                if sup:
-                    sup.user = user
-                    sup.save()
-                else:
-                    Supervisor.objects.create(user=user, department=d["department"],
-                                              full_name=d["full_name"].strip(), approved=False)
+                                            role=User.STUDENT, first_name=first, last_name=last)
+            st = Student.objects.filter(pk=d["matric_no"]).first()
+            if st:
+                st.user = user
+                st.level = d["level"]
+                st.save()
             else:
-                user.department = d["department"]
-                user.approved = False
-                user.save()
+                Student.objects.create(matric_no=d["matric_no"], user=user, department=d["department"],
+                                       full_name=d["full_name"].strip(), cgpa=0, level=d["level"])
         login(request, user)
-        if d["role"] == "coordinator":
-            messages.success(request, "Account created. The platform administrator will approve it.")
-        else:
-            messages.success(request, "Account created. Complete your profile to be included in the allocation.")
+        messages.success(request, "Account created. Complete your profile to be included in the allocation.")
         return redirect("home")
     return render(request, "core/register.html", {
         "form": form,
@@ -195,14 +177,14 @@ def supervisor_home(request):
     sup = get_object_or_404(Supervisor.objects.select_related("department__institution"), user=request.user)
     dept = sup.department
     frozen = dept.any_published
-    form = SupervisorForm(instance=sup, prefix="p")
+    form = SupervisorForm(instance=sup, prefix="p", with_login=False)
     pform = ProjectForm(prefix="j")
     if request.method == "POST":
         if frozen:
             messages.error(request, "An allocation has been published. Ask the coordinator to make changes.")
             return redirect("supervisor_home")
         if "save_profile" in request.POST:
-            form = SupervisorForm(request.POST, instance=sup, prefix="p")
+            form = SupervisorForm(request.POST, instance=sup, prefix="p", with_login=False)
             if form.is_valid():
                 form.save()
                 messages.success(request, "Profile saved.")
@@ -314,27 +296,10 @@ def c_overview(request):
             if s.capacity_for(cycle.level) >= 1:
                 loads.append({"sup": s, "n": s.load(cycle.level), "capacity": s.capacity_for(cycle.level)})
     other_cycle = dept.cycles.filter(level=ND if cycle.level == HND else HND).first()
-    coordinators = User.objects.filter(role=User.COORDINATOR, department=dept).order_by("-approved", "email")
+    coordinators = User.objects.filter(role=User.COORDINATOR, department=dept, approved=True).order_by("email")
     return render(request, "core/c_overview.html", _ctx(request, dept, cycle, stage=stage, loads=loads,
                                                         other_cycle=other_cycle, coordinators=coordinators,
                                                         nav="overview"))
-
-
-@require_POST
-@role_required(User.COORDINATOR)
-def c_coordinator_decide(request, pk):
-    """An approved coordinator approves or declines a coordinator who signed up for the same department."""
-    dept = _dept(request)
-    other = get_object_or_404(User, pk=pk, role=User.COORDINATOR, department=dept, approved=False)
-    if "approve" in request.POST:
-        other.approved = True
-        other.save(update_fields=["approved"])
-        messages.success(request, f"{other.display_name()} can now coordinate the Department of {dept.name}.")
-    else:
-        name = other.display_name()
-        other.delete()
-        messages.success(request, f"The coordinator request from {name} was declined.")
-    return redirect("c_overview")
 
 
 @role_required(User.COORDINATOR)
@@ -475,17 +440,23 @@ def c_supervisor_form(request, pk=None):
     inst = get_object_or_404(Supervisor, pk=pk, department=dept) if pk else None
     form = SupervisorForm(request.POST or None, instance=inst)
     if request.method == "POST" and form.is_valid():
-        s = form.save(commit=False)
-        s.department = dept
-        s.approved = True
-        s.save()
-        messages.success(request, f"Saved {s.full_name}.")
+        with transaction.atomic():
+            s = form.save(commit=False)
+            s.department = dept
+            s.approved = True
+            s.save()
+            user = form.save_login(s)
+        msg = f"Saved {s.full_name}."
+        if user and form.cleaned_data.get("login_password"):
+            msg += f" They can sign in with {user.email} and the password you set."
+        messages.success(request, msg)
         return redirect("c_supervisors")
     return render(request, "core/c_form.html", _ctx(
         request, dept, cycle, form=form, nav="supervisors", back="c_supervisors",
         title="Edit supervisor" if inst else "Add a supervisor",
         lead="The specialisation statement and past projects together form the supervisor's profile. "
-             "Capacity is set separately for HND and ND students."))
+             "Capacity is set separately for HND and ND students. Supervisors cannot sign up themselves: "
+             "give them a sign-in email and password here so they can see their allocated students."))
 
 
 @require_POST

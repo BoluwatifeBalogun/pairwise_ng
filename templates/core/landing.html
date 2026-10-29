@@ -6,7 +6,7 @@
   <nav class="pnav-links" aria-label="Main">
     <a class="hide-s" href="#how">How it works</a><a class="hide-s" href="#worked">Worked example</a><a class="hide-s" href="#departments">Departments</a>
     {% if user.is_authenticated %}<a class="btn btn-primary btn-sm" href="{% url 'home' %}">Open my portal</a>
-    {% else %}<a href="{% url 'login' %}">Sign in</a><a class="btn btn-primary btn-sm" href="{% url 'register' %}">Create account</a>{% endif %}
+    {% else %}<a href="{% url 'login' %}">Sign in</a><a class="btn btn-primary btn-sm" href="{% url 'register' %}">Student sign-up</a>{% endif %}
   </nav>
 </div></header>
 
@@ -16,7 +16,7 @@
     <h1 aria-label="Matched on meaning. Placed on merit."><span class="w" style="--i:0">Matched</span> <span class="w" style="--i:1">on</span> <span class="w" style="--i:2">meaning.</span><br><span class="w" style="--i:4">Placed</span> <span class="w" style="--i:5">on</span> <span class="w" style="--i:6">merit.</span></h1>
     <p class="hero-lead rise" style="--d:620ms">The system reads what each final year student wants to work on, compares it with every supervisor's specialisation and past projects using Sentence-BERT, then fills each supervisor's places in CGPA order. ND and HND projects are allocated separately, for every department of {{ INSTITUTION_NAME }}.</p>
     <div class="hero-cta rise" style="--d:760ms">
-      <a class="btn btn-primary btn-lg" href="{% url 'register' %}">Create an account {% icon "arrow-right" %}</a>
+      <a class="btn btn-primary btn-lg" href="{% url 'register' %}">Student sign-up {% icon "arrow-right" %}</a>
       <a class="btn btn-ghost btn-lg" href="#how">See how it works</a>
     </div>
     <div class="hero-meta rise" style="--d:900ms">
@@ -121,8 +121,8 @@
 
 <section class="section" style="padding-top:0"><div class="wrap"><div class="cta reveal">
   <h2>Run this session's allocation in an afternoon, not a fortnight</h2>
-  <p>{% if DEMO_MODE %}Sign in with a demonstration account to walk through a full cycle, or register as a student or supervisor.{% else %}Students and supervisors register in a minute. Coordinators receive their account from the platform administrator.{% endif %}</p>
-  <div class="row"><a class="btn btn-primary btn-lg" href="{% url 'login' %}">{% if DEMO_MODE %}Sign in to the demonstration{% else %}Sign in{% endif %}</a><a class="btn btn-ghost btn-lg" href="{% url 'register' %}">Create an account</a></div>
+  <p>{% if DEMO_MODE %}Sign in with a demonstration account to walk through a full cycle. {% endif %}Final year students create their own account. Supervisors receive their sign-in from their department's coordinator, and coordinators from the platform administrator.</p>
+  <div class="row"><a class="btn btn-primary btn-lg" href="{% url 'login' %}">{% if DEMO_MODE %}Sign in to the demonstration{% else %}Sign in{% endif %}</a><a class="btn btn-ghost btn-lg" href="{% url 'register' %}">Student sign-up</a></div>
 </div></div></section>
 </main>
 <footer class="wrap foot"><span>{{ INSTITUTION_NAME }}. Student-to-supervisor allocation using Sentence-BERT semantic matching.</span><span>HND seminar project, Department of Computer Science.</span></footer>

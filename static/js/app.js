@@ -70,12 +70,8 @@
   /* register: matric field only for students, example follows department */
   var reg = $("#register-form");
   if (reg) {
-    var block = $("#student-only"), matric = $("#field-matric_no"), dep = $("#id_department"), ex = JSON.parse(reg.dataset.examples || "{}");
+    var matric = $("#field-matric_no"), dep = $("#id_department"), ex = JSON.parse(reg.dataset.examples || "{}");
     var sync = function () {
-      var role = (reg.querySelector('input[name="role"]:checked') || {}).value;
-      block.hidden = role !== "student";
-      var cn = $("#coord-note"); if (cn) cn.hidden = role !== "coordinator";
-      $("#id_matric_no").required = role === "student";
       var h = $(".help", matric); if (h && dep.value && ex[dep.value]) h.textContent = "Format: " + ex[dep.value];
       var m = ($("#id_matric_no").value || "").toUpperCase();
       var lv = /(^|\/)HD(\/|$)/.test(m) ? "HND" : (/(^|\/)ND(\/|$)/.test(m) ? "ND" : null);
