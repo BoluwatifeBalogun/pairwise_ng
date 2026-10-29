@@ -3,13 +3,14 @@
 {% block sidehead %}One sentence about your project is enough.{% endblock %}
 {% block sidetext %}Students describe an interest in plain words. Supervisors declare a specialisation and a capacity. The coordinator does the rest.{% endblock %}
 {% block box %}
-<h2>Create an account</h2><p>For students and supervisors of {{ INSTITUTION_NAME }}. Coordinator accounts are created by the platform administrator.</p>
+<h2>Create an account</h2><p>For students, supervisors and project coordinators of {{ INSTITUTION_NAME }}.</p>
 {% include "core/_errors.html" %}
 <form method="post" novalidate id="register-form" data-examples="{{ examples }}">{% csrf_token %}
   <div class="field"><span id="role-label" style="font-weight:550;font-size:15px">{{ form.role.label }}</span>
-    <div class="seg" role="radiogroup" aria-labelledby="role-label">{% for value, label in form.role.field.choices %}<span style="display:contents"><input type="radio" name="role" id="role-{{ value }}" value="{{ value }}"{% if form.role.value == value %} checked{% endif %}><label for="role-{{ value }}">{{ label }}</label></span>{% endfor %}</div></div>
+    <div class="seg seg3" role="radiogroup" aria-labelledby="role-label">{% for value, label in form.role.field.choices %}<span style="display:contents"><input type="radio" name="role" id="role-{{ value }}" value="{{ value }}"{% if form.role.value == value %} checked{% endif %}><label for="role-{{ value }}">{{ label }}</label></span>{% endfor %}</div></div>
   {% include "core/_field.html" with f=form.department %}
   {% include "core/_field.html" with f=form.full_name %}
+  <p class="note" id="coord-note"{% if form.role.value != "coordinator" %} hidden{% endif %} style="margin-bottom:18px">{% icon "info" %}<span>Coordinator accounts run the allocation for one department. An existing coordinator of the department, or the platform administrator, approves each one before it can be used.</span></p>
   <div class="student-only" id="student-only"{% if form.role.value == "supervisor" %} hidden{% endif %}>
     <div class="field{% if form.level.errors %} has-error{% endif %}" id="field-level"><span id="level-label" style="font-weight:550;font-size:15px">{{ form.level.label }}</span>
       <div class="seg" role="radiogroup" aria-labelledby="level-label">{% for value, label in form.level.field.choices %}<span style="display:contents"><input type="radio" name="level" id="level-{{ value }}" value="{{ value }}"{% if form.level.value|default:"HND" == value %} checked{% endif %}><label for="level-{{ value }}">{{ value }}<span class="sr-only">, {{ label }}</span></label></span>{% endfor %}</div>

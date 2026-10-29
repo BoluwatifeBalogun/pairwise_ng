@@ -16,6 +16,7 @@ urlpatterns = [
     path("supervisor", v.supervisor_home, name="supervisor_home"),
     path("supervisor/projects/<int:pk>/delete", v.project_delete, name="project_delete"),
     path("coordinator", v.c_overview, name="c_overview"),
+    path("coordinator/coordinators/<int:pk>", v.c_coordinator_decide, name="c_coordinator_decide"),
     path("coordinator/students", v.c_students, name="c_students"),
     path("coordinator/students/add", v.c_student_form, name="c_student_add"),
     path("coordinator/students/import", v.c_students_import, name="c_students_import"),
@@ -34,4 +35,9 @@ urlpatterns = [
     path("coordinator/report", v.c_report, name="c_report"),
     path("coordinator/report.csv", v.c_report_csv, name="c_report_csv"),
     path("template/<str:name>.csv", v.csv_template, name="csv_template"),
+    path("template/<str:name>.xlsx", v.csv_template, {"ext": "xlsx"}, name="xlsx_template"),
+    path("coordinator/supervisors/import", v.c_supervisors_import, name="c_supervisors_import"),
+    path("coordinator/supervisors.xlsx", v.c_supervisors_xlsx, name="c_supervisors_xlsx"),
+    path("coordinator/students.xlsx", v.c_students_xlsx, name="c_students_xlsx"),
+    path("coordinator/report.xlsx", v.c_report_xlsx, name="c_report_xlsx"),
 ]

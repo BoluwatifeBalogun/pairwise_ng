@@ -36,16 +36,28 @@ other programme is a separate run.
 python manage.py test tests
 ```
 
-19 tests: the eight of report Table 4.6 (two of them on 1,000 random problems each), the worked
+27 tests: the eight of report Table 4.6 (two of them on 1,000 random problems each), the worked
 example of Table 4.4, seven end-to-end tests of the portals, database, SBERT module and
-allocation module, and three for the administrator account and running without demo data.
+allocation module, three for the administrator account and running without demo data, and eight for the
+Excel and CSV imports, Excel downloads and per-department coordinators.
 
 ## Real data
 
-- Institutions, departments and coordinator accounts: `/admin/` (set role = Coordinator and pick the department).
-- Students: Students page (on the level you are working on), Add or Import from CSV
-  (`data/students_template.csv`; the optional `level` column takes ND or HND).
-- Past projects: Past projects page, Upload (`data/past_projects_template.csv`). No student names or matric numbers.
+- Departments: `/admin/`. Each department has its own coordinator dashboard and its own
+  allocation; running one department never changes another department's records.
+- Coordinators: sign up on Create account (choose Coordinator and the department). An existing
+  coordinator of that department approves them from the Overview page, or the administrator
+  approves them in `/admin/`. A department can have several coordinators. The administrator can
+  also create coordinator accounts directly in `/admin/` (set role = Coordinator and the department).
+- Students: Students page (on the level you are working on), Add, or Import from Excel (.xlsx)
+  or CSV. Columns: matric_no, full_name, cgpa, interest_text, optional level (ND or HND).
+- Supervisors: Supervisors page, Add, or Import from Excel or CSV. Columns: full_name,
+  specialisation, hnd_capacity, nd_capacity. Names already listed are updated. A supervisor who
+  later signs up with the same name is linked to the imported record.
+- Templates for every import download from the import panels, as Excel or CSV.
+- Imports only add or update. They never delete a student, supervisor or past project.
+- Downloads: the Students, Supervisors and Publish pages each have a Download/Export Excel button.
+- Past projects: Past projects page, Upload an Excel or CSV file. No student names or matric numbers.
 - `python manage.py seed_demo --reset` wipes and reloads the demonstration data.
 - Set `DEMO_MODE=0` to hide the demonstration sign-in shortcuts.
 
@@ -72,7 +84,7 @@ SQLite by default. Set `DATABASE_URL` to use a hosted database; no code change i
 - PostgreSQL: `postgres://USER:PASSWORD@HOST:PORT/DBNAME`
 
 The MySQL driver is PyMySQL, which is pure Python, so nothing has to be compiled on the host.
-Tested against MySQL 8.0 and PostgreSQL 16 (over SSL): migrations, demo seed, all 19 tests,
+Tested against MySQL 8.0 and PostgreSQL 16 (over SSL): migrations, demo seed, all 26 tests,
 and a browser pass on each.
 
 ## Hosting on Render (free plan) with a hosted database

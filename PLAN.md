@@ -130,3 +130,6 @@ features" landing pattern. Its suggested navy palette was replaced by the green 
   script could not be executed in the build sandbox (no PyTorch there), so treat its first run as a test.
 - All demonstration people and records are fictional. The baseline scores come from those records.
 - Section 4.7.3 user acceptance feedback must come from the real coordinator, supervisors and students.
+7. Data entry: students, supervisors and past projects can be uploaded as Excel (.xlsx) or CSV,
+   and results downloaded as Excel (supervisor's second review). Imports add or update only.
+8. Coordinators can sign up for a department; the administrator approves them before use.

@@ -36,14 +36,20 @@ class EmailUserCreationForm(UserCreationForm):
 @admin.register(User)
 class UA(UserAdmin):
     add_form = EmailUserCreationForm
-    list_display = ("email", "first_name", "last_name", "role", "department", "is_superuser")
-    list_filter = ("role", "is_superuser", "department")
+    list_display = ("email", "first_name", "last_name", "role", "department", "approved", "is_superuser")
+    list_filter = ("role", "approved", "is_superuser", "department")
+    actions = ["approve_coordinators"]
+
+    @admin.action(description="Approve the selected coordinators")
+    def approve_coordinators(self, request, queryset):
+        n = queryset.filter(role=User.COORDINATOR).update(approved=True)
+        self.message_user(request, f"Approved {n} coordinator account(s).")
     search_fields = ("email", "first_name", "last_name")
     ordering = ("email",)
     fieldsets = (
         (None, {"fields": ("email", "password")}),
         ("Person", {"fields": ("first_name", "last_name")}),
-        ("Role", {"fields": ("role", "department")}),
+        ("Role", {"fields": ("role", "department", "approved")}),
         ("Access", {"fields": ("is_active", "is_staff", "is_superuser")}),
     )
     add_fieldsets = ((None, {"classes": ("wide",), "fields": (

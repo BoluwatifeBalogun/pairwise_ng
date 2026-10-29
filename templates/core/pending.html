@@ -1,0 +1,9 @@
+{% extends "core/_solo.html" %}{% load ui %}
+{% block title %}Waiting for approval, {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="card card-pad" style="max-width:620px;margin:40px auto 0">
+  <span class="badge warn">{% icon "info" %} Waiting for approval</span>
+  <h1 style="font-size:40px;margin:14px 0 10px">Your coordinator account is almost ready</h1>
+  <p class="muted">You asked to coordinate final year project allocation for the Department of {{ dept.name }}. An existing coordinator of this department, or the platform administrator, needs to approve the account before you can manage records and run allocations. Sign in again once you have been told it is approved.</p>
+</div>
+{% endblock %}

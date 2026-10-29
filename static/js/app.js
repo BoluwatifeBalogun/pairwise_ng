@@ -74,6 +74,7 @@
     var sync = function () {
       var role = (reg.querySelector('input[name="role"]:checked') || {}).value;
       block.hidden = role !== "student";
+      var cn = $("#coord-note"); if (cn) cn.hidden = role !== "coordinator";
       $("#id_matric_no").required = role === "student";
       var h = $(".help", matric); if (h && dep.value && ex[dep.value]) h.textContent = "Format: " + ex[dep.value];
       var m = ($("#id_matric_no").value || "").toUpperCase();

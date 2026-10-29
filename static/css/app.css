@@ -281,7 +281,7 @@ tr.is-flag td:first-child{box-shadow:inset 3px 0 0 #D9900A}
 .auth-box>p{color:var(--muted);margin-bottom:26px}
 .demo-accts{margin-top:26px;padding:16px;border-radius:var(--r);background:var(--mist);border:1px solid var(--line);font-size:14px}
 .demo-accts h3{font-size:14px;margin-bottom:8px}
-.demo-accts button{display:flex;justify-content:space-between;gap:10px;width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font:inherit;font-size:14px;cursor:pointer;margin-top:6px;min-height:44px;align-items:center;transition:border-color var(--fast)}
+.demo-accts button{color:var(--ink);display:flex;justify-content:space-between;gap:10px;width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font:inherit;font-size:14px;cursor:pointer;margin-top:6px;min-height:44px;align-items:center;transition:border-color var(--fast)}
 .demo-accts button:hover{border-color:var(--green)}
 .demo-accts code{font-family:inherit;color:var(--muted);font-size:13.5px}
 @media (max-width:860px){.auth{grid-template-columns:1fr}.auth-side{padding:24px 20px}.auth-side h1{font-size:34px}.auth-side .quote{display:none}}
@@ -423,3 +423,9 @@ details.more summary{cursor:pointer;font-weight:550;color:var(--green-deep);min-
 @media (max-width:420px){.seg label{font-size:14px}}
 .pnav-links a{white-space:nowrap}
 @media (max-width:560px){.pnav-in{gap:6px}.pnav-links a:not(.btn){padding:9px 8px;font-size:14px}.pnav .brand-inst{font-size:15px}.pnav .btn-sm{padding:0 11px;font-size:14px}}
+.seg.seg3{grid-template-columns:repeat(3,1fr)}
+.note[hidden]{display:none}
+.page-actions .btn-ghost .ico{margin-right:2px}
+
+button{color:inherit}
+.btn-primary,.btn-primary:hover{color:#fff}

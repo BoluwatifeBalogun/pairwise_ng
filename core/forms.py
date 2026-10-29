@@ -21,8 +21,9 @@ class LoginForm(AuthenticationForm):
 
 
 class RegisterForm(forms.Form):
-    role = forms.ChoiceField(label="I am a", choices=[("student", "Final year student"),
-                                                      ("supervisor", "Project supervisor")])
+    role = forms.ChoiceField(label="I am a", choices=[("student", "Student"),
+                                                      ("supervisor", "Supervisor"),
+                                                      ("coordinator", "Coordinator")])
     department = forms.ModelChoiceField(label="Department", empty_label="Choose your department",
                                         queryset=Department.objects.select_related("institution"))
     level = forms.ChoiceField(label="Programme", choices=LEVELS, initial=HND, required=False)
@@ -197,12 +198,17 @@ class ProjectForm(forms.ModelForm):
 
 
 class UploadForm(forms.Form):
-    file = forms.FileField(label="CSV file")
+    file = forms.FileField(label="Excel or CSV file", widget=forms.ClearableFileInput(
+        attrs={"accept": ".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"}))
 
     def clean_file(self):
         f = self.cleaned_data["file"]
-        if f.size > 2 * 1024 * 1024:
-            raise forms.ValidationError("The file is larger than 2 MB.")
-        if not f.name.lower().endswith(".csv"):
-            raise forms.ValidationError("Upload a .csv file. The template shows the columns.")
+        if f.size > 5 * 1024 * 1024:
+            raise forms.ValidationError("The file is larger than 5 MB.")
+        name = f.name.lower()
+        if name.endswith(".xls"):
+            raise forms.ValidationError("This is an old Excel file (.xls). In Excel choose Save As, then "
+                                        "Excel Workbook (.xlsx), and upload that.")
+        if not name.endswith((".xlsx", ".csv")):
+            raise forms.ValidationError("Upload an Excel (.xlsx) or CSV file. The template shows the columns.")
         return f

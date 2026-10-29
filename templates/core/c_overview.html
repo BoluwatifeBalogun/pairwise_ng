@@ -25,5 +25,9 @@
   <div class="card card-pad"><h3>This {{ level }} run</h3>
     <dl class="kv" style="margin-top:14px"><dt>Model</dt><dd>{{ cycle.last_run_version.name|default:version.name|default:"None active" }}</dd><dt>Threshold</dt><dd class="num">{{ cycle.threshold|score }}</dd><dt>Placed</dt><dd class="num">{{ counts.placed }}</dd><dt>Flagged</dt><dd class="num">{{ counts.flags }} ({{ counts.open_flags }} open)</dd><dt>Status</dt><dd>{% if cycle.published %}<span class="badge ok">Published</span>{% elif cycle.last_run_at %}<span class="badge warn">Not published</span>{% else %}<span class="badge">Not run</span>{% endif %}</dd>{% if other_cycle %}<dt>{{ other_level }} run</dt><dd>{% if other_cycle.published %}<span class="badge ok">Published</span>{% elif other_cycle.last_run_at %}<span class="badge warn">Not published</span>{% else %}<span class="badge">Not run</span>{% endif %}</dd>{% endif %}</dl></div>
 </div>
+<div class="card card-pad"><div class="card-head"><h3>Coordinators for this department</h3><span class="muted" style="font-size:14px">New coordinators sign up on the Create account page</span></div>
+  {% for c in coordinators %}<div class="loadrow" style="grid-template-columns:minmax(0,1fr) auto"><span><span style="font-weight:550">{{ c.display_name }}</span><br><span class="muted" style="font-size:13.5px">{{ c.email }}{% if c.pk == user.pk %}, you{% endif %}</span></span>
+    {% if c.approved %}<span class="badge ok">Active</span>{% else %}<form class="row" method="post" action="{% url 'c_coordinator_decide' c.pk %}">{% csrf_token %}<button class="btn btn-primary btn-sm" type="submit" name="approve" value="1">Approve</button><button class="btn btn-ghost btn-sm" type="submit" name="decline" value="1" data-confirm="Decline and remove this coordinator request?">Decline</button></form>{% endif %}</div>{% endfor %}
+</div>
 </div>
 {% endblock %}

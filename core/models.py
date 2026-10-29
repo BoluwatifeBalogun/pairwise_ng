@@ -18,6 +18,8 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
     department = models.ForeignKey("Department", null=True, blank=True, on_delete=models.SET_NULL,
                                    help_text="Department a coordinator administers")
+    approved = models.BooleanField(default=True, help_text="Coordinators who sign up themselves wait for the "
+                                                           "platform administrator to approve them")
 
     def display_name(self):
         return self.get_full_name() or self.email

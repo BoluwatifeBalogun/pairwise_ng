@@ -16,7 +16,7 @@ from django.views.decorators.http import require_POST
 
 from engine import preprocess as pp
 
-from . import demo, services
+from . import demo, services, tabular
 from .forms import ProjectForm, RegisterForm, StudentForm, SupervisorForm, UploadForm
 from .models import (HND, LEVEL_NAMES, LEVELS, ND, Allocation, Cycle, Department, FitScore, Institution,
                      ModelVersion, PastProject, Student, Supervisor, User)
@@ -32,6 +32,8 @@ def role_required(role):
             if role == User.COORDINATOR and not request.user.department_id:
                 messages.error(request, "Your account is not attached to a department yet.")
                 return redirect("landing")
+            if role == User.COORDINATOR and not request.user.approved:
+                return render(request, "core/pending.html", {"dept": request.user.department})
             return fn(request, *a, **kw)
         return inner
     return deco
@@ -97,11 +99,25 @@ def register(request):
                 else:
                     Student.objects.create(matric_no=d["matric_no"], user=user, department=d["department"],
                                            full_name=d["full_name"].strip(), cgpa=0, level=d["level"])
+            elif d["role"] == "supervisor":
+                # a coordinator may already have imported this supervisor: link to that record
+                sup = Supervisor.objects.filter(department=d["department"], user__isnull=True,
+                                                full_name__iexact=d["full_name"].strip()).first()
+                if sup:
+                    sup.user = user
+                    sup.save()
+                else:
+                    Supervisor.objects.create(user=user, department=d["department"],
+                                              full_name=d["full_name"].strip(), approved=False)
             else:
-                Supervisor.objects.create(user=user, department=d["department"],
-                                          full_name=d["full_name"].strip(), approved=False)
+                user.department = d["department"]
+                user.approved = False
+                user.save()
         login(request, user)
-        messages.success(request, "Account created. Complete your profile to be included in the allocation.")
+        if d["role"] == "coordinator":
+            messages.success(request, "Account created. The platform administrator will approve it.")
+        else:
+            messages.success(request, "Account created. Complete your profile to be included in the allocation.")
         return redirect("home")
     return render(request, "core/register.html", {
         "form": form,
@@ -116,11 +132,33 @@ def home(request):
                      "coordinator": "c_overview"}[request.user.role])
 
 
-def csv_template(request, name):
-    if name not in ("students_template", "past_projects_template"):
+TEMPLATES = {
+    "students_template": (["matric_no", "full_name", "level", "cgpa", "interest_text"], [
+        ["F/HD/24/3210099", "Example HND Student", "HND", 3.21,
+         "I want to build an online shop where people can buy thrift clothes"],
+        ["F/ND/24/3210199", "Example ND Student", "ND", 2.95,
+         "a website where students can buy and sell used textbooks"]]),
+    "supervisors_template": (["full_name", "specialisation", "hnd_capacity", "nd_capacity"], [
+        ["Dr. Example Lecturer", "Machine learning, predictive analytics and data science", 5, 3],
+        ["Mr. Example Lecturer", "Computer networks, Internet of Things and embedded systems", 4, 2]]),
+    "past_projects_template": (["supervisor_name", "title", "keywords", "abstract", "session"], [
+        ["Dr. Example Lecturer", "Design and implementation of an online marketplace for locally made footwear",
+         "e-commerce, web, payment", "", "2023/2024"]]),
+}
+
+
+def csv_template(request, name, ext="csv"):
+    if name not in TEMPLATES:
         raise Http404
-    return FileResponse(open(settings.BASE_DIR / "data" / f"{name}.csv", "rb"),
-                        as_attachment=True, filename=f"{name}.csv")
+    headers, rows = TEMPLATES[name]
+    if ext == "xlsx":
+        return tabular.xlsx_response(f"{name}.xlsx", "Template", headers, rows)
+    resp = HttpResponse(content_type="text/csv")
+    resp["Content-Disposition"] = f'attachment; filename="{name}.csv"'
+    w = csv.writer(resp)
+    w.writerow(headers)
+    w.writerows(rows)
+    return resp
 
 
 # ---------------------------------------------------------------- student
@@ -276,8 +314,27 @@ def c_overview(request):
             if s.capacity_for(cycle.level) >= 1:
                 loads.append({"sup": s, "n": s.load(cycle.level), "capacity": s.capacity_for(cycle.level)})
     other_cycle = dept.cycles.filter(level=ND if cycle.level == HND else HND).first()
+    coordinators = User.objects.filter(role=User.COORDINATOR, department=dept).order_by("-approved", "email")
     return render(request, "core/c_overview.html", _ctx(request, dept, cycle, stage=stage, loads=loads,
-                                                        other_cycle=other_cycle, nav="overview"))
+                                                        other_cycle=other_cycle, coordinators=coordinators,
+                                                        nav="overview"))
+
+
+@require_POST
+@role_required(User.COORDINATOR)
+def c_coordinator_decide(request, pk):
+    """An approved coordinator approves or declines a coordinator who signed up for the same department."""
+    dept = _dept(request)
+    other = get_object_or_404(User, pk=pk, role=User.COORDINATOR, department=dept, approved=False)
+    if "approve" in request.POST:
+        other.approved = True
+        other.save(update_fields=["approved"])
+        messages.success(request, f"{other.display_name()} can now coordinate the Department of {dept.name}.")
+    else:
+        name = other.display_name()
+        other.delete()
+        messages.success(request, f"The coordinator request from {name} was declined.")
+    return redirect("c_overview")
 
 
 @role_required(User.COORDINATOR)
@@ -336,16 +393,19 @@ def c_students_import(request):
     if not form.is_valid():
         messages.error(request, " ".join(e for errs in form.errors.values() for e in errs))
         return redirect("c_students")
-    rows = csv.DictReader(io.StringIO(form.cleaned_data["file"].read().decode("utf-8-sig", "replace")))
+    try:
+        cols, rows = tabular.read_rows(form.cleaned_data["file"])
+    except Exception:
+        messages.error(request, "That file could not be read. Save it again as .xlsx or .csv and retry.")
+        return redirect("c_students")
     need = {"matric_no", "full_name", "cgpa"}
-    if not rows.fieldnames or not need.issubset({f.strip() for f in rows.fieldnames}):
+    if not need.issubset(set(cols)):
         messages.error(request, "The file needs these columns: matric_no, full_name, cgpa, interest_text "
                                 "(and optionally level: ND or HND).")
         return redirect("c_students")
     locked = {c.level for c in dept.cycles.filter(published=True)}
     saved, problems = 0, []
     for n, row in enumerate(rows, start=2):
-        row = {(k or "").strip(): (v or "").strip() for k, v in row.items()}
         if not any(row.values()):
             continue
         m = pp.normalise_matric(row.get("matric_no"))
@@ -402,7 +462,7 @@ def c_supervisors(request):
     for s in sups:
         s.n_hnd, s.n_nd = s.load(HND), s.load(ND)
     return render(request, "core/c_supervisors.html", _ctx(request, dept, cycle, supervisors=sups,
-                                                            nav="supervisors"))
+                                                            upload=UploadForm(), nav="supervisors"))
 
 
 @role_required(User.COORDINATOR)
@@ -468,13 +528,17 @@ def c_projects(request):
         if not form.is_valid():
             messages.error(request, " ".join(e for errs in form.errors.values() for e in errs))
             return redirect("c_projects")
-        rows = csv.DictReader(io.StringIO(form.cleaned_data["file"].read().decode("utf-8-sig", "replace")))
-        if not rows.fieldnames or not {"supervisor_name", "title"}.issubset({f.strip() for f in rows.fieldnames}):
+        try:
+            cols, rows = tabular.read_rows(form.cleaned_data["file"])
+        except Exception:
+            messages.error(request, "That file could not be read. Save it again as .xlsx or .csv and retry.")
+            return redirect("c_projects")
+        if not {"supervisor_name", "title"}.issubset(set(cols)):
             messages.error(request, "The file needs these columns: supervisor_name, title, keywords, abstract, session.")
             return redirect("c_projects")
         saved, dupes, problems = 0, 0, []
         for n, row in enumerate(rows, start=2):
-            row = {(k or "").strip(): pp.clean_text(v) for k, v in row.items()}
+            row = {k: pp.clean_text(v) for k, v in row.items()}
             if not any(row.values()):
                 continue
             sup = sups.get(row.get("supervisor_name", "").lower())
@@ -669,3 +733,120 @@ def c_report_csv(request):
                     f"{a.fit_score:.3f}" if a.fit_score is not None else "", a.choice_rank or "",
                     "yes" if a.flagged else "no", a.resolution])
     return resp
+
+
+@require_POST
+@role_required(User.COORDINATOR)
+def c_supervisors_import(request):
+    """Add or update supervisors from Excel or CSV. Matched by name within this department;
+    nothing is ever deleted."""
+    dept = _dept(request)
+    if dept.any_published:
+        messages.error(request, "An allocation is published. Unpublish it before changing supervisors.")
+        return redirect("c_supervisors")
+    form = UploadForm(request.POST, request.FILES)
+    if not form.is_valid():
+        messages.error(request, " ".join(e for errs in form.errors.values() for e in errs))
+        return redirect("c_supervisors")
+    try:
+        cols, rows = tabular.read_rows(form.cleaned_data["file"])
+    except Exception:
+        messages.error(request, "That file could not be read. Save it again as .xlsx or .csv and retry.")
+        return redirect("c_supervisors")
+    if not {"full_name", "specialisation"}.issubset(set(cols)):
+        messages.error(request, "The file needs these columns: full_name, specialisation, hnd_capacity, "
+                                "nd_capacity.")
+        return redirect("c_supervisors")
+    added, updated, problems = 0, 0, []
+
+    def number(v, default):
+        if v in ("", None):
+            return default
+        n = float(v)
+        if n < 0 or n != int(n):
+            raise ValueError
+        return int(n)
+
+    for n, row in enumerate(rows, start=2):
+        if not any(row.values()):
+            continue
+        name = pp.clean_text(row.get("full_name", ""))[:120]
+        spec = pp.clean_text(row.get("specialisation", ""))
+        try:
+            hnd = number(row.get("hnd_capacity"), 5)
+            nd = number(row.get("nd_capacity"), 3)
+        except ValueError:
+            problems.append(f"Row {n} ({name or 'no name'}): capacities must be whole numbers, 0 or more.")
+            continue
+        if not name:
+            problems.append(f"Row {n}: the full name is missing.")
+            continue
+        if len(spec) < 10:
+            problems.append(f"Row {n} ({name}): describe the specialisation in at least a few words.")
+            continue
+        if not (hnd or nd):
+            problems.append(f"Row {n} ({name}): at least one capacity must be 1 or more.")
+            continue
+        sup = dept.supervisors.filter(full_name__iexact=name).first()
+        if sup:
+            if hnd < sup.load(HND) or nd < sup.load(ND):
+                problems.append(f"Row {n} ({name}): the new capacity is below the students already allocated.")
+                continue
+            sup.specialisation_text, sup.capacity, sup.capacity_nd = spec, hnd, nd
+            sup.save()
+            updated += 1
+        else:
+            Supervisor.objects.create(department=dept, full_name=name, specialisation_text=spec,
+                                      capacity=hnd, capacity_nd=nd, approved=True)
+            added += 1
+    if added or updated:
+        messages.success(request, f"Added {added} and updated {updated} supervisors.")
+    if problems:
+        more = f" and {len(problems) - 6} more" if len(problems) > 6 else ""
+        messages.error(request, f"{len(problems)} rows were skipped. " + " ".join(problems[:6]) + more)
+    return redirect("c_supervisors")
+
+
+def _slug(dept):
+    return dept.name.replace(" ", "_")
+
+
+@role_required(User.COORDINATOR)
+def c_students_xlsx(request):
+    dept = _dept(request)
+    cycle = _cycle(request, dept)
+    rows = []
+    for s in dept.students.filter(level=cycle.level).select_related("allocation__supervisor").order_by("matric_no"):
+        a = getattr(s, "allocation", None)
+        rows.append([s.matric_no, s.full_name, s.level, float(s.cgpa), s.interest_text,
+                     a.supervisor.full_name if a and a.supervisor else ""])
+    return tabular.xlsx_response(
+        f"{cycle.level}_students_{_slug(dept)}.xlsx", f"{cycle.level} students",
+        ["matric_no", "full_name", "level", "cgpa", "interest_text", "allocated_supervisor"], rows)
+
+
+@role_required(User.COORDINATOR)
+def c_supervisors_xlsx(request):
+    dept = _dept(request)
+    rows = [[s.full_name, s.specialisation_text, s.capacity, s.capacity_nd, s.load(HND), s.load(ND)]
+            for s in dept.supervisors.order_by("full_name")]
+    return tabular.xlsx_response(
+        f"supervisors_{_slug(dept)}.xlsx", "Supervisors",
+        ["full_name", "specialisation", "hnd_capacity", "nd_capacity", "hnd_allocated", "nd_allocated"], rows)
+
+
+@role_required(User.COORDINATOR)
+def c_report_xlsx(request):
+    dept = _dept(request)
+    cycle = _cycle(request, dept)
+    rows = []
+    for a in (Allocation.objects.filter(student__department=dept, student__level=cycle.level)
+              .select_related("student", "supervisor").order_by("supervisor__full_name", "student__matric_no")):
+        rows.append([a.supervisor.full_name if a.supervisor else "NOT PLACED", a.student.matric_no,
+                     a.student.full_name, a.student.level, float(a.student.cgpa), a.student.interest_text,
+                     round(a.fit_score, 3) if a.fit_score is not None else "", a.choice_rank or "",
+                     "yes" if a.flagged else "no", a.resolution])
+    return tabular.xlsx_response(
+        f"allocation_{cycle.level}_{_slug(dept)}_{dept.session.replace('/', '-')}.xlsx", f"{cycle.level} allocation",
+        ["supervisor", "matric_no", "full_name", "level", "cgpa", "interest_text", "fit_score", "choice_rank",
+         "flagged", "note"], rows)
